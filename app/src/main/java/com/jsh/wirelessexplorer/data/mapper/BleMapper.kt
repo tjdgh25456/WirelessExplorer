@@ -81,7 +81,7 @@ internal fun Int.toBleBondState(): BleBondState = when (this) {
 
 internal fun BluetoothGattService.toGattServiceInfo(): GattServiceInfo {
     val uuidStr = uuid.toString().lowercase()
-    val shortUuid = uuidStr.substring(0, UUID_SHORT_PREFIX_LENGTH)
+    val shortUuid = uuidStr.take(UUID_SHORT_PREFIX_LENGTH)
     return GattServiceInfo(
         uuid = uuidStr,
         name = KNOWN_SERVICES[shortUuid] ?: "Unknown Service",
@@ -93,7 +93,7 @@ internal fun BluetoothGattCharacteristic.toGattCharacteristicInfo(
     serviceUuid: String,
 ): GattCharacteristicInfo {
     val uuidStr = uuid.toString().lowercase()
-    val shortUuid = uuidStr.substring(0, UUID_SHORT_PREFIX_LENGTH)
+    val shortUuid = uuidStr.take(UUID_SHORT_PREFIX_LENGTH)
     return GattCharacteristicInfo(
         uuid = uuidStr,
         serviceUuid = serviceUuid,

@@ -13,6 +13,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import timber.log.Timber
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -42,8 +43,8 @@ class BleScanner @Inject constructor(
             return@callbackFlow
         }
 
-        // Thread-safe device accumulator
-        val discoveredDevices = LinkedHashMap<String, ScanResult>()
+        // Thread-safe device accumulator (ConcurrentHashMap으로 동시 접근 안전 보장)
+        val discoveredDevices = ConcurrentHashMap<String, ScanResult>()
 
         val scanCallback = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
@@ -54,7 +55,10 @@ class BleScanner @Inject constructor(
                 val sorted = discoveredDevices.values
                     .sortedByDescending { it.rssi }
                     .map { it.toBleDevice() }
-                trySend(sorted)
+                val sendResult = trySend(sorted)
+                if (sendResult.isFailure) {
+                    Timber.w("trySend 실패: onScanResult")
+                }
             }
 
             override fun onBatchScanResults(results: MutableList<ScanResult>) {
@@ -64,7 +68,10 @@ class BleScanner @Inject constructor(
                 val sorted = discoveredDevices.values
                     .sortedByDescending { it.rssi }
                     .map { it.toBleDevice() }
-                trySend(sorted)
+                val sendResult = trySend(sorted)
+                if (sendResult.isFailure) {
+                    Timber.w("trySend 실패: onBatchScanResults")
+                }
             }
 
             override fun onScanFailed(errorCode: Int) {

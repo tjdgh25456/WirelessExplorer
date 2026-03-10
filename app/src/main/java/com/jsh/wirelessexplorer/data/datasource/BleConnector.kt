@@ -16,6 +16,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -27,6 +28,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -60,15 +62,10 @@ class BleConnector @Inject constructor(
     )
     val characteristicUpdates: SharedFlow<CharacteristicUpdate> = _characteristicUpdates
 
-    // 현재 진행 중인 오퍼레이션의 결과를 수신하기 위한 deferred
-    @Volatile
-    private var pendingRead: CompletableDeferred<Result<ByteArray>>? = null
-
-    @Volatile
-    private var pendingWrite: CompletableDeferred<Result<Unit>>? = null
-
-    @Volatile
-    private var pendingDescriptorWrite: CompletableDeferred<Result<Unit>>? = null
+    // 현재 진행 중인 오퍼레이션의 결과를 수신하기 위한 deferred (AtomicReference로 스레드 안전 보장)
+    private val pendingRead = AtomicReference<CompletableDeferred<Result<ByteArray>>?>(null)
+    private val pendingWrite = AtomicReference<CompletableDeferred<Result<Unit>>?>(null)
+    private val pendingDescriptorWrite = AtomicReference<CompletableDeferred<Result<Unit>>?>(null)
 
     /**
      * BLE 디바이스에 GATT 연결을 수립하고 연결 상태를 Flow로 방출한다.
@@ -78,7 +75,9 @@ class BleConnector @Inject constructor(
     fun connect(address: String): Flow<BleConnectionState> = callbackFlow {
         val device = bluetoothAdapter?.getRemoteDevice(address)
         if (device == null) {
-            trySend(BleConnectionState.Error("Device not found", -1))
+            trySend(BleConnectionState.Error("Device not found", -1)).also {
+                if (it.isFailure) Timber.w("trySend 실패: Device not found")
+            }
             close()
             return@callbackFlow
         }
@@ -99,17 +98,23 @@ class BleConnector @Inject constructor(
                     newState == BluetoothProfile.STATE_CONNECTED && status == BluetoothGatt.GATT_SUCCESS -> {
                         Timber.d("GATT 연결 성공: $address")
                         retryCount = 0
-                        trySend(BleConnectionState.DiscoveringServices)
+                        trySend(BleConnectionState.DiscoveringServices).also {
+                            if (it.isFailure) Timber.w("trySend 실패: DiscoveringServices")
+                        }
                         gatt.discoverServices()
                     }
 
                     newState == BluetoothProfile.STATE_DISCONNECTED -> {
                         if (status != BluetoothGatt.GATT_SUCCESS) {
                             Timber.e("GATT 연결 해제 (status=$status)")
-                            trySend(BleConnectionState.Error("Disconnected with error", status))
+                            trySend(BleConnectionState.Error("Disconnected with error", status)).also {
+                                if (it.isFailure) Timber.w("trySend 실패: Error")
+                            }
                         } else {
                             Timber.d("GATT 정상 연결 해제")
-                            trySend(BleConnectionState.Idle)
+                            trySend(BleConnectionState.Idle).also {
+                                if (it.isFailure) Timber.w("trySend 실패: Idle")
+                            }
                         }
                         cleanupPendingOperations()
                     }
@@ -120,10 +125,14 @@ class BleConnector @Inject constructor(
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     Timber.d("GATT 서비스 발견 완료: ${gatt.services.size}개")
                     val services = gatt.services.map { it.toGattServiceInfo() }
-                    trySend(BleConnectionState.Connected(services))
+                    trySend(BleConnectionState.Connected(services)).also {
+                        if (it.isFailure) Timber.w("trySend 실패: Connected")
+                    }
                 } else {
                     Timber.e("GATT 서비스 발견 실패: status=$status")
-                    trySend(BleConnectionState.Error("Service discovery failed", status))
+                    trySend(BleConnectionState.Error("Service discovery failed", status)).also {
+                        if (it.isFailure) Timber.w("trySend 실패: Error (service discovery)")
+                    }
                 }
             }
 
@@ -150,14 +159,14 @@ class BleConnector @Inject constructor(
                 characteristic: BluetoothGattCharacteristic,
                 status: Int,
             ) {
+                val deferred = pendingWrite.getAndSet(null) ?: return
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     Timber.d("Characteristic 쓰기 성공: ${characteristic.uuid}")
-                    pendingWrite?.complete(Result.success(Unit))
+                    deferred.safeComplete(Result.success(Unit))
                 } else {
                     Timber.e("Characteristic 쓰기 실패: status=$status")
-                    pendingWrite?.complete(Result.failure(Exception("Write failed with status: $status")))
+                    deferred.safeComplete(Result.failure(Exception("Write failed with status: $status")))
                 }
-                pendingWrite = null
             }
 
             @Deprecated("Deprecated in API 33+")
@@ -181,22 +190,24 @@ class BleConnector @Inject constructor(
                 descriptor: BluetoothGattDescriptor,
                 status: Int,
             ) {
+                val deferred = pendingDescriptorWrite.getAndSet(null) ?: return
                 if (status == BluetoothGatt.GATT_SUCCESS) {
-                    pendingDescriptorWrite?.complete(Result.success(Unit))
+                    deferred.safeComplete(Result.success(Unit))
                 } else {
-                    pendingDescriptorWrite?.complete(
+                    deferred.safeComplete(
                         Result.failure(Exception("Descriptor write failed: $status")),
                     )
                 }
-                pendingDescriptorWrite = null
             }
         }
 
-        trySend(BleConnectionState.Connecting)
+        trySend(BleConnectionState.Connecting).also {
+            if (it.isFailure) Timber.w("trySend 실패: Connecting")
+        }
         gattRef = device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
 
-        // GATT 오퍼레이션 큐 처리 코루틴
-        launch(ioDispatcher) {
+        // GATT 오퍼레이션 큐 처리 코루틴 (callbackFlow의 ProducerScope에 스코핑)
+        launch {
             for (operation in operationQueue) {
                 delay(OP_QUEUE_DELAY_MS)
                 operation.execute()
@@ -212,6 +223,8 @@ class BleConnector @Inject constructor(
     @SuppressLint("MissingPermission")
     fun disconnect() {
         cleanupPendingOperations()
+        // 오퍼레이션 큐를 먼저 닫아서 더 이상 새로운 작업이 들어오지 않도록 함
+        operationQueue.close()
         gattRef?.let { gatt ->
             gatt.disconnect()
             gatt.close()
@@ -231,13 +244,18 @@ class BleConnector @Inject constructor(
                 ?: return@withContext Result.failure(Exception("Characteristic not found"))
 
             val deferred = CompletableDeferred<Result<ByteArray>>()
-            pendingRead = deferred
+            pendingRead.set(deferred)
 
-            operationQueue.trySend(GattOperation { gatt.readCharacteristic(characteristic) })
+            try {
+                operationQueue.trySend(GattOperation { gatt.readCharacteristic(characteristic) })
+            } catch (e: ClosedSendChannelException) {
+                pendingRead.compareAndSet(deferred, null)
+                return@withContext Result.failure(Exception("Operation queue closed"))
+            }
 
             withTimeoutOrNull(OP_TIMEOUT_MS) { deferred.await() }
                 ?: Result.failure<ByteArray>(Exception("Read operation timed out")).also {
-                    pendingRead = null
+                    pendingRead.compareAndSet(deferred, null)
                 }
         }
 
@@ -255,21 +273,26 @@ class BleConnector @Inject constructor(
             ?: return@withContext Result.failure(Exception("Characteristic not found"))
 
         val deferred = CompletableDeferred<Result<Unit>>()
-        pendingWrite = deferred
+        pendingWrite.set(deferred)
 
-        operationQueue.trySend(
-            GattOperation {
-                gatt.writeCharacteristic(
-                    characteristic,
-                    value,
-                    BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT,
-                )
-            },
-        )
+        try {
+            operationQueue.trySend(
+                GattOperation {
+                    gatt.writeCharacteristic(
+                        characteristic,
+                        value,
+                        BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT,
+                    )
+                },
+            )
+        } catch (e: ClosedSendChannelException) {
+            pendingWrite.compareAndSet(deferred, null)
+            return@withContext Result.failure(Exception("Operation queue closed"))
+        }
 
         withTimeoutOrNull(OP_TIMEOUT_MS) { deferred.await() }
             ?: Result.failure<Unit>(Exception("Write operation timed out")).also {
-                pendingWrite = null
+                pendingWrite.compareAndSet(deferred, null)
             }
     }
 
@@ -290,7 +313,7 @@ class BleConnector @Inject constructor(
             ?: return@withContext Result.failure(Exception("CCC descriptor not found"))
 
         val deferred = CompletableDeferred<Result<Unit>>()
-        pendingDescriptorWrite = deferred
+        pendingDescriptorWrite.set(deferred)
 
         val descriptorValue = if (enable) {
             BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
@@ -298,16 +321,30 @@ class BleConnector @Inject constructor(
             BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
         }
 
-        operationQueue.trySend(
-            GattOperation {
-                gatt.setCharacteristicNotification(characteristic, enable)
-                gatt.writeDescriptor(descriptor, descriptorValue)
-            },
-        )
+        try {
+            operationQueue.trySend(
+                GattOperation {
+                    // setCharacteristicNotification 성공 여부를 확인한 후 descriptor 쓰기 진행
+                    val success = gatt.setCharacteristicNotification(characteristic, enable)
+                    if (success) {
+                        gatt.writeDescriptor(descriptor, descriptorValue)
+                    } else {
+                        Timber.e("setCharacteristicNotification 실패: ${characteristic.uuid}")
+                        val d = pendingDescriptorWrite.getAndSet(null)
+                        d?.safeComplete(
+                            Result.failure(Exception("setCharacteristicNotification failed")),
+                        )
+                    }
+                },
+            )
+        } catch (e: ClosedSendChannelException) {
+            pendingDescriptorWrite.compareAndSet(deferred, null)
+            return@withContext Result.failure(Exception("Operation queue closed"))
+        }
 
         withTimeoutOrNull(OP_TIMEOUT_MS) { deferred.await() }
             ?: Result.failure<Unit>(Exception("Notification setup timed out")).also {
-                pendingDescriptorWrite = null
+                pendingDescriptorWrite.compareAndSet(deferred, null)
             }
     }
 
@@ -316,19 +353,27 @@ class BleConnector @Inject constructor(
         serviceUuid: String,
         charUuid: String,
     ): BluetoothGattCharacteristic? {
-        val service = gatt.getService(UUID.fromString(serviceUuid))
-        return service?.getCharacteristic(UUID.fromString(charUuid))
+        val sUuid = runCatching { UUID.fromString(serviceUuid) }.getOrElse {
+            Timber.e(it, "잘못된 서비스 UUID 형식: $serviceUuid")
+            return null
+        }
+        val cUuid = runCatching { UUID.fromString(charUuid) }.getOrElse {
+            Timber.e(it, "잘못된 Characteristic UUID 형식: $charUuid")
+            return null
+        }
+        val service = gatt.getService(sUuid)
+        return service?.getCharacteristic(cUuid)
     }
 
     private fun handleCharacteristicRead(value: ByteArray?, status: Int) {
+        val deferred = pendingRead.getAndSet(null) ?: return
         if (status == BluetoothGatt.GATT_SUCCESS && value != null) {
             Timber.d("Characteristic 읽기 성공: ${value.size} bytes")
-            pendingRead?.complete(Result.success(value))
+            deferred.safeComplete(Result.success(value))
         } else {
             Timber.e("Characteristic 읽기 실패: status=$status")
-            pendingRead?.complete(Result.failure(Exception("Read failed with status: $status")))
+            deferred.safeComplete(Result.failure(Exception("Read failed with status: $status")))
         }
-        pendingRead = null
     }
 
     private fun handleCharacteristicChanged(uuid: String, value: ByteArray?) {
@@ -340,16 +385,24 @@ class BleConnector @Inject constructor(
 
     private fun cleanupPendingOperations() {
         val cancelled = Exception("Operation cancelled: disconnected")
-        pendingRead?.complete(Result.failure(cancelled))
-        pendingRead = null
-        pendingWrite?.complete(Result.failure(cancelled))
-        pendingWrite = null
-        pendingDescriptorWrite?.complete(Result.failure(cancelled))
-        pendingDescriptorWrite = null
+        pendingRead.getAndSet(null)?.safeComplete(Result.failure(cancelled))
+        pendingWrite.getAndSet(null)?.safeComplete(Result.failure(cancelled))
+        pendingDescriptorWrite.getAndSet(null)?.safeComplete(Result.failure(cancelled))
     }
 
     private fun interface GattOperation {
         fun execute()
+    }
+}
+
+/** 이미 완료된 Deferred에 대한 중복 완료 방지 확장 함수 */
+private fun <T> CompletableDeferred<T>.safeComplete(value: T) {
+    if (!isCompleted) {
+        try {
+            complete(value)
+        } catch (e: IllegalStateException) {
+            Timber.w(e, "Deferred 이미 완료됨")
+        }
     }
 }
 
