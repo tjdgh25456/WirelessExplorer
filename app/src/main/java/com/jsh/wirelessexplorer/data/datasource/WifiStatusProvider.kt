@@ -9,6 +9,7 @@ import android.net.NetworkRequest
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import com.jsh.wirelessexplorer.di.IoDispatcher
+import com.jsh.wirelessexplorer.domain.model.WifiSecurityType
 import com.jsh.wirelessexplorer.domain.model.WifiStatus
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
@@ -137,18 +138,12 @@ class WifiStatusProvider @Inject constructor(
 
     /** 연결된 BSSID의 보안 유형을 스캔 결과에서 조회한다. */
     @SuppressLint("MissingPermission")
-    private fun resolveSecurityType(bssid: String?): String {
-        if (bssid == null) return "OPEN"
+    private fun resolveSecurityType(bssid: String?): WifiSecurityType {
+        if (bssid == null) return WifiSecurityType.OPEN
         val capabilities = wifiManager.scanResults
             .firstOrNull { it.BSSID == bssid }
-            ?.capabilities ?: return "OPEN"
-        return when {
-            "WPA3" in capabilities -> "WPA3"
-            "WPA2" in capabilities -> "WPA2"
-            "WPA" in capabilities -> "WPA"
-            "WEP" in capabilities -> "WEP"
-            else -> "OPEN"
-        }
+            ?.capabilities ?: return WifiSecurityType.OPEN
+        return WifiSecurityType.from(capabilities)
     }
 
     /** Wi-Fi 주파수(MHz)를 채널 번호로 변환한다. */

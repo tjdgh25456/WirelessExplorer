@@ -29,6 +29,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.jsh.wirelessexplorer.R
 import androidx.compose.ui.tooling.preview.Preview
 import com.jsh.wirelessexplorer.domain.model.DashboardStats
+import com.jsh.wirelessexplorer.domain.model.WifiSecurityType
 import com.jsh.wirelessexplorer.domain.model.WifiStatus
 import com.jsh.wirelessexplorer.presentation.theme.Background
 import com.jsh.wirelessexplorer.presentation.theme.OnSurface
@@ -156,7 +157,7 @@ private fun DashboardScreenPreview() {
                     linkSpeed = 866,
                     frequency = 5200,
                     ipAddress = "192.168.1.100",
-                    securityType = "WPA2",
+                    securityType = WifiSecurityType.WPA2,
                     channel = 40,
                     isConnected = true,
                 ),

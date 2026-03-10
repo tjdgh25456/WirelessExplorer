@@ -10,7 +10,8 @@ private const val FREQ_6_GHZ_END = 7125
 enum class FrequencyBand(val label: String) {
     BAND_2_4_GHZ("2.4 GHz"),
     BAND_5_GHZ("5 GHz"),
-    BAND_6_GHZ("6 GHz");
+    BAND_6_GHZ("6 GHz"),
+    UNKNOWN("Unknown");
 
     companion object {
         /**
@@ -21,7 +22,7 @@ enum class FrequencyBand(val label: String) {
             in FREQ_2_4_GHZ_START..FREQ_2_4_GHZ_END -> BAND_2_4_GHZ
             in FREQ_5_GHZ_START..FREQ_5_GHZ_END -> BAND_5_GHZ
             in FREQ_6_GHZ_START..FREQ_6_GHZ_END -> BAND_6_GHZ
-            else -> BAND_6_GHZ // 7125+ MHz도 6 GHz 대역으로 분류
+            else -> UNKNOWN
         }
     }
 }

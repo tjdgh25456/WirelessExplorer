@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jsh.wirelessexplorer.R
 import com.jsh.wirelessexplorer.domain.model.SignalStrength
+import com.jsh.wirelessexplorer.domain.model.WifiSecurityType
 import com.jsh.wirelessexplorer.domain.model.WifiStatus
 import com.jsh.wirelessexplorer.presentation.theme.OnSurface
 import com.jsh.wirelessexplorer.presentation.theme.OnSurfaceDim
@@ -30,7 +31,6 @@ import com.jsh.wirelessexplorer.presentation.theme.WifiGreen
 import com.jsh.wirelessexplorer.presentation.theme.WirelessExplorerTheme
 import androidx.compose.ui.tooling.preview.Preview
 
-private const val SECURITY_TYPE_OPEN = "OPEN"
 private const val FREQUENCY_DIVISOR = 1000.0
 
 @Composable
@@ -109,16 +109,17 @@ fun ConnectionStatusCard(
 
 @Composable
 private fun SecurityBadge(
-    securityType: String,
+    securityType: WifiSecurityType,
     modifier: Modifier = Modifier,
 ) {
-    val label = if (securityType == SECURITY_TYPE_OPEN) {
+    val isOpen = securityType == WifiSecurityType.OPEN
+    val label = if (isOpen) {
         stringResource(R.string.label_open_network)
     } else {
-        stringResource(R.string.label_secured_format, securityType)
+        stringResource(R.string.label_secured_format, securityType.label)
     }
-    val badgeColor = if (securityType == SECURITY_TYPE_OPEN) SurfaceVariant else WifiGreen.copy(alpha = 0.15f)
-    val textColor = if (securityType == SECURITY_TYPE_OPEN) OnSurfaceDim else WifiGreen
+    val badgeColor = if (isOpen) SurfaceVariant else WifiGreen.copy(alpha = 0.15f)
+    val textColor = if (isOpen) OnSurfaceDim else WifiGreen
 
     Surface(
         shape = RoundedCornerShape(20.dp),
@@ -148,7 +149,7 @@ private fun ConnectionStatusCardPreview() {
                 linkSpeed = 866,
                 frequency = 5200,
                 ipAddress = "192.168.1.100",
-                securityType = "WPA2",
+                securityType = WifiSecurityType.WPA2,
                 channel = 40,
                 isConnected = true,
             ),

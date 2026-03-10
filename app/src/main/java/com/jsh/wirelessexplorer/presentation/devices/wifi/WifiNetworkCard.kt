@@ -177,6 +177,7 @@ private fun SecurityPill(securityType: WifiSecurityType, modifier: Modifier = Mo
         WifiSecurityType.WPA3 -> Color(0xFFEF4444)
         WifiSecurityType.WPA2 -> Color(0xFFEAB308)
         WifiSecurityType.WPA -> Color(0xFFF97316)
+        WifiSecurityType.WEP -> Color(0xFFF97316)
         WifiSecurityType.OPEN -> Color(0xFF22C55E)
     }
 

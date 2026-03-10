@@ -6,7 +6,7 @@ data class WifiStatus(
     val linkSpeed: Int,
     val frequency: Int,
     val ipAddress: String,
-    val securityType: String,
+    val securityType: WifiSecurityType,
     val channel: Int,
     val isConnected: Boolean,
 )
