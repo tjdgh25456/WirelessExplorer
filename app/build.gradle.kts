@@ -92,6 +92,9 @@ dependencies {
     // Permissions - Accompanist
     implementation(libs.accompanist.permissions)
 
+    // Splash
+    implementation(libs.androidx.splashscreen)
+
     // Logging
     implementation(libs.timber)
 

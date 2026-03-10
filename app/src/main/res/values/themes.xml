@@ -2,4 +2,11 @@
 <resources>
 
     <style name="Theme.WirelessExplorer" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.WirelessExplorer.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#0A0A1A</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="windowSplashScreenAnimationDuration">800</item>
+        <item name="postSplashScreenTheme">@style/Theme.WirelessExplorer</item>
+    </style>
 </resources>
