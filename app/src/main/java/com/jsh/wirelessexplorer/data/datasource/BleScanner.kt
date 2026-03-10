@@ -10,12 +10,18 @@ import com.jsh.wirelessexplorer.data.mapper.toBleDevice
 import com.jsh.wirelessexplorer.domain.model.BleDevice
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
+
+/** UI 방출 주기 (ms) — 콜백마다 방출하지 않고 주기적으로 배치 방출 */
+private const val EMIT_INTERVAL_MS = 500L
 
 @Singleton
 class BleScanner @Inject constructor(
@@ -32,7 +38,7 @@ class BleScanner @Inject constructor(
 
     /**
      * BLE 스캔을 시작하고 발견된 디바이스 목록을 방출한다.
-     * RSSI 기준 내림차순 정렬, MAC 주소 기준 중복 제거.
+     * 콜백은 ConcurrentHashMap에 축적만 하고, 500ms 주기로 배치 방출하여 성능 최적화.
      */
     @SuppressLint("MissingPermission")
     fun scanDevices(): Flow<List<BleDevice>> = callbackFlow {
@@ -43,40 +49,41 @@ class BleScanner @Inject constructor(
             return@callbackFlow
         }
 
-        // Thread-safe device accumulator (ConcurrentHashMap으로 동시 접근 안전 보장)
+        // Thread-safe device accumulator
         val discoveredDevices = ConcurrentHashMap<String, ScanResult>()
+        val isDirty = AtomicBoolean(false)
 
         val scanCallback = object : ScanCallback() {
             override fun onScanResult(callbackType: Int, result: ScanResult) {
-                val address = result.device.address
-                discoveredDevices[address] = result
-
-                // RSSI 내림차순 정렬 후 방출
-                val sorted = discoveredDevices.values
-                    .sortedByDescending { it.rssi }
-                    .map { it.toBleDevice() }
-                val sendResult = trySend(sorted)
-                if (sendResult.isFailure) {
-                    Timber.w("trySend 실패: onScanResult")
-                }
+                discoveredDevices[result.device.address] = result
+                isDirty.set(true)
             }
 
             override fun onBatchScanResults(results: MutableList<ScanResult>) {
                 results.forEach { result ->
                     discoveredDevices[result.device.address] = result
                 }
-                val sorted = discoveredDevices.values
-                    .sortedByDescending { it.rssi }
-                    .map { it.toBleDevice() }
-                val sendResult = trySend(sorted)
-                if (sendResult.isFailure) {
-                    Timber.w("trySend 실패: onBatchScanResults")
-                }
+                isDirty.set(true)
             }
 
             override fun onScanFailed(errorCode: Int) {
                 Timber.e("BLE 스캔 실패: errorCode=$errorCode")
                 close(IllegalStateException("BLE scan failed with error code: $errorCode"))
+            }
+        }
+
+        // 주기적 배치 방출 코루틴
+        launch {
+            while (true) {
+                delay(EMIT_INTERVAL_MS)
+                if (isDirty.compareAndSet(true, false)) {
+                    val sorted = discoveredDevices.values
+                        .sortedByDescending { it.rssi }
+                        .map { it.toBleDevice() }
+                    trySend(sorted).also { result ->
+                        if (result.isFailure) Timber.w("trySend 실패: 배치 방출")
+                    }
+                }
             }
         }
 
