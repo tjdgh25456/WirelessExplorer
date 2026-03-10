@@ -42,6 +42,9 @@ lottieCompose = "6.7.1"
 # Permissions
 accompanist = "0.37.3"
 
+# Splash
+splashscreen = "1.0.1"
+
 # Logging
 timber = "5.0.1"
 
@@ -122,6 +125,9 @@ lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "
 
 # Permissions - Accompanist
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist" }
+
+# Splash
+androidx-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "splashscreen" }
 
 # Logging
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }

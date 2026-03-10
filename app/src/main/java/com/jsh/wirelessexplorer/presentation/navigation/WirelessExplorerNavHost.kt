@@ -1,16 +1,19 @@
 package com.jsh.wirelessexplorer.presentation.navigation
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import com.jsh.wirelessexplorer.presentation.analyze.AnalyzeScreen
+import com.jsh.wirelessexplorer.presentation.dashboard.DashboardScreen
+import com.jsh.wirelessexplorer.presentation.detail.DeviceDetailScreen
+import com.jsh.wirelessexplorer.presentation.devices.DevicesScreen
+import com.jsh.wirelessexplorer.presentation.history.HistoryScreen
+import com.jsh.wirelessexplorer.presentation.onboarding.OnboardingScreen
+import com.jsh.wirelessexplorer.presentation.search.SearchScreen
+import com.jsh.wirelessexplorer.presentation.settings.SettingsScreen
 
 @Composable
 fun WirelessExplorerNavHost(
@@ -22,30 +25,78 @@ fun WirelessExplorerNavHost(
         startDestination = DashboardRoute,
         modifier = modifier,
     ) {
-        composable<DashboardRoute> { PlaceholderScreen("Dashboard") }
-        composable<DevicesRoute> { PlaceholderScreen("Devices") }
-        composable<AnalyzeRoute> { PlaceholderScreen("Analyze") }
-        composable<HistoryRoute> { PlaceholderScreen("History") }
-        composable<SettingsRoute> { PlaceholderScreen("Settings") }
-        composable<SearchRoute> { PlaceholderScreen("Search") }
-        composable<OnboardingRoute> { PlaceholderScreen("Onboarding") }
+        composable<DashboardRoute> {
+            DashboardScreen(
+                onNavigateToDevices = {
+                    navController.navigate(DevicesRoute) {
+                        launchSingleTop = true
+                    }
+                },
+                onNavigateToSettings = {
+                    navController.navigate(SettingsRoute)
+                },
+            )
+        }
+
+        composable<DevicesRoute> {
+            DevicesScreen(
+                onNavigateToDetail = { deviceId ->
+                    navController.navigate(DeviceDetailRoute(deviceId))
+                },
+            )
+        }
+
+        composable<AnalyzeRoute> {
+            AnalyzeScreen()
+        }
+
+        composable<HistoryRoute> {
+            HistoryScreen(
+                onNavigateToSearch = {
+                    navController.navigate(SearchRoute)
+                },
+                onNavigateToDetail = { deviceId ->
+                    navController.navigate(DeviceDetailRoute(deviceId))
+                },
+                onNavigateToDevices = {
+                    navController.navigate(DevicesRoute) {
+                        launchSingleTop = true
+                    }
+                },
+            )
+        }
+
+        composable<SettingsRoute> {
+            SettingsScreen(
+                onNavigateBack = { navController.popBackStack() },
+            )
+        }
+
+        composable<SearchRoute> {
+            SearchScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToDetail = { deviceId ->
+                    navController.navigate(DeviceDetailRoute(deviceId))
+                },
+            )
+        }
+
+        composable<OnboardingRoute> {
+            OnboardingScreen(
+                onOnboardingComplete = {
+                    navController.navigate(DashboardRoute) {
+                        popUpTo(OnboardingRoute) { inclusive = true }
+                    }
+                },
+            )
+        }
+
         composable<DeviceDetailRoute> { backStackEntry ->
             val route = backStackEntry.toRoute<DeviceDetailRoute>()
-            PlaceholderScreen("Device #${route.deviceId}")
+            DeviceDetailScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onReconnect = { /* TODO: 기술별 재연결 화면으로 이동 */ },
+            )
         }
-    }
-}
-
-@Composable
-private fun PlaceholderScreen(title: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
     }
 }
