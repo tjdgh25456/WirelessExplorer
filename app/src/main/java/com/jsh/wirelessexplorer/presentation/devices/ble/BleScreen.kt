@@ -48,6 +48,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.jsh.wirelessexplorer.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.jsh.wirelessexplorer.domain.model.BleConnectionState
+import com.jsh.wirelessexplorer.presentation.common.RequireLocationService
 import com.jsh.wirelessexplorer.presentation.common.RequirePermissions
 import com.jsh.wirelessexplorer.presentation.theme.Background
 import com.jsh.wirelessexplorer.presentation.theme.BleBlue
@@ -73,11 +74,14 @@ fun BleScreen(
         permissions = listOf(
             Manifest.permission.BLUETOOTH_SCAN,
             Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.ACCESS_FINE_LOCATION,
         ),
         rationaleTitle = stringResource(R.string.title_ble_permission),
         rationaleMessage = stringResource(R.string.desc_ble_permission),
     ) {
-        BleScreenContent(modifier = modifier, viewModel = viewModel)
+        RequireLocationService {
+            BleScreenContent(modifier = modifier, viewModel = viewModel)
+        }
     }
 }
 

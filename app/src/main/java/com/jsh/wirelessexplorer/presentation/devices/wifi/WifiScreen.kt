@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.jsh.wirelessexplorer.R
+import com.jsh.wirelessexplorer.presentation.common.RequireLocationService
 import com.jsh.wirelessexplorer.presentation.common.RequirePermissions
 import androidx.compose.ui.tooling.preview.Preview
 import com.jsh.wirelessexplorer.domain.model.WifiConnectionInfo
@@ -65,11 +66,14 @@ fun WifiScreen(
     RequirePermissions(
         permissions = listOf(
             Manifest.permission.NEARBY_WIFI_DEVICES,
+            Manifest.permission.ACCESS_FINE_LOCATION,
         ),
         rationaleTitle = stringResource(R.string.title_wifi_permission),
         rationaleMessage = stringResource(R.string.desc_wifi_permission),
     ) {
-        WifiScreenContent(modifier = modifier, viewModel = viewModel)
+        RequireLocationService {
+            WifiScreenContent(modifier = modifier, viewModel = viewModel)
+        }
     }
 }
 
