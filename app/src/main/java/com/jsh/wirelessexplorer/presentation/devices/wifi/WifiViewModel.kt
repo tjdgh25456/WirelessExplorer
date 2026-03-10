@@ -6,6 +6,7 @@ import com.jsh.wirelessexplorer.domain.repository.WifiRepository
 import com.jsh.wirelessexplorer.domain.usecase.ObserveWifiConnectionUseCase
 import com.jsh.wirelessexplorer.domain.usecase.ScanWifiNetworksUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +28,10 @@ class WifiViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(WifiUiState())
     val uiState: StateFlow<WifiUiState> = _uiState.asStateFlow()
 
+    /** 중복 구독 방지용 Job 참조 */
+    private var scanJob: Job? = null
+    private var connectionJob: Job? = null
+
     init {
         loadConnectionInfo()
     }
@@ -37,7 +42,9 @@ class WifiViewModel @Inject constructor(
             return
         }
 
-        viewModelScope.launch {
+        // 기존 스캔 Job 취소 후 새로 시작 (중복 구독 방지)
+        scanJob?.cancel()
+        scanJob = viewModelScope.launch {
             scanWifiNetworks()
                 .onStart {
                     _uiState.update { it.copy(isScanning = true, error = null) }
@@ -67,7 +74,9 @@ class WifiViewModel @Inject constructor(
     }
 
     private fun loadConnectionInfo() {
-        viewModelScope.launch {
+        // 기존 연결 정보 Job 취소 후 새로 시작 (중복 구독 방지)
+        connectionJob?.cancel()
+        connectionJob = viewModelScope.launch {
             observeWifiConnection()
                 .catch { throwable ->
                     Timber.e(throwable, "연결 정보 조회 오류")

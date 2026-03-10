@@ -49,6 +49,7 @@ private const val CHANNEL_WIDTH_20MHZ = 0
 private const val CHANNEL_WIDTH_40MHZ = 1
 private const val CHANNEL_WIDTH_80MHZ = 2
 private const val CHANNEL_WIDTH_160MHZ = 3
+private const val CHANNEL_WIDTH_80MHZ_PLUS_80MHZ = 4 // 80+80 MHz
 private const val CHANNEL_WIDTH_320MHZ = 5 // Wi-Fi 7 (802.11be)
 
 // 채널 대역폭 (MHz)
@@ -95,7 +96,9 @@ class WifiScanner @Inject constructor(
                 } else {
                     Timber.d("Wi-Fi 스캔 쓰로틀링, 캐시된 결과 반환")
                 }
-                trySend(cachedNetworks)
+                trySend(cachedNetworks).also { result ->
+                    if (result.isFailure) Timber.w("trySend 실패: Wi-Fi 스캔 결과 전송")
+                }
             }
         }
 
@@ -104,14 +107,18 @@ class WifiScanner @Inject constructor(
 
         // 초기 캐시 결과 전송 후 새 스캔 요청
         if (cachedNetworks.isNotEmpty()) {
-            trySend(cachedNetworks)
+            trySend(cachedNetworks).also { result ->
+                if (result.isFailure) Timber.w("trySend 실패: Wi-Fi 초기 캐시 전송")
+            }
         }
 
         @Suppress("DEPRECATION")
         val started = wifiManager.startScan()
         if (!started) {
             Timber.w("Wi-Fi 스캔 시작 실패, 캐시된 결과 사용")
-            trySend(mapScanResults(connectedBssid).also { cachedNetworks = it })
+            trySend(mapScanResults(connectedBssid).also { cachedNetworks = it }).also { result ->
+                if (result.isFailure) Timber.w("trySend 실패: Wi-Fi 폴백 결과 전송")
+            }
         }
 
         awaitClose {
@@ -223,6 +230,7 @@ class WifiScanner @Inject constructor(
         CHANNEL_WIDTH_40MHZ -> BANDWIDTH_40
         CHANNEL_WIDTH_80MHZ -> BANDWIDTH_80
         CHANNEL_WIDTH_160MHZ -> BANDWIDTH_160
+        CHANNEL_WIDTH_80MHZ_PLUS_80MHZ -> BANDWIDTH_160 // 80+80 = 160 MHz 상당
         CHANNEL_WIDTH_320MHZ -> BANDWIDTH_320
         else -> BANDWIDTH_20
     }

@@ -70,12 +70,16 @@ class WifiStatusProvider @Inject constructor(
                 capabilities: NetworkCapabilities,
             ) {
                 val status = extractWifiStatus(capabilities)
-                trySend(status)
+                trySend(status).also { result ->
+                    if (result.isFailure) Timber.w("trySend 실패: Wi-Fi 상태 전송")
+                }
             }
 
             override fun onLost(network: Network) {
                 Timber.d("Wi-Fi 네트워크 연결 해제됨")
-                trySend(null)
+                trySend(null).also { result ->
+                    if (result.isFailure) Timber.w("trySend 실패: Wi-Fi 연결 해제 전송")
+                }
             }
         }
 
@@ -84,7 +88,9 @@ class WifiStatusProvider @Inject constructor(
 
         // 초기 상태 즉시 전송
         val initial = resolveCurrentStatus()
-        trySend(initial)
+        trySend(initial).also { result ->
+            if (result.isFailure) Timber.w("trySend 실패: Wi-Fi 초기 상태 전송")
+        }
 
         awaitClose {
             Timber.d("Wi-Fi 상태 콜백 해제")
