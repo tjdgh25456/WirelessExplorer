@@ -51,7 +51,7 @@ class BleViewModel @Inject constructor(
         scanJob = scanBleDevices()
             .onStart {
                 Timber.d("BLE 스캔 시작")
-                _uiState.update { it.copy(isScanning = true, error = null) }
+                _uiState.update { it.copy(isScanning = true, error = null, devices = emptyList()) }
             }
             .onEach { devices ->
                 _uiState.update { it.copy(devices = devices) }

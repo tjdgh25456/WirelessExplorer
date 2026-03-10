@@ -84,18 +84,27 @@ class WifiStatusProvider @Inject constructor(
             }
         }
 
-        connectivityManager.registerNetworkCallback(request, callback)
-        Timber.d("Wi-Fi 상태 콜백 등록")
+        // NetworkCallback 등록 (예외 시 Flow 종료)
+        try {
+            connectivityManager.registerNetworkCallback(request, callback)
+            Timber.d("Wi-Fi 상태 콜백 등록")
+        } catch (e: Exception) {
+            Timber.e(e, "Wi-Fi 상태 콜백 등록 실패")
+            close(e)
+            return@callbackFlow
+        }
 
         // 초기 상태 즉시 전송
         val initial = resolveCurrentStatus()
-        trySend(initial).also { result ->
-            if (result.isFailure) Timber.w("trySend 실패: Wi-Fi 초기 상태 전송")
-        }
+        trySend(initial)
 
         awaitClose {
             Timber.d("Wi-Fi 상태 콜백 해제")
-            connectivityManager.unregisterNetworkCallback(callback)
+            try {
+                connectivityManager.unregisterNetworkCallback(callback)
+            } catch (e: IllegalArgumentException) {
+                Timber.w(e, "Wi-Fi 상태 콜백 이미 해제됨")
+            }
         }
     }.flowOn(ioDispatcher)
 
@@ -140,7 +149,7 @@ class WifiStatusProvider @Inject constructor(
     @SuppressLint("MissingPermission")
     private fun resolveSecurityType(bssid: String?): WifiSecurityType {
         if (bssid == null) return WifiSecurityType.OPEN
-        val capabilities = wifiManager.scanResults
+        val capabilities = (wifiManager.scanResults ?: emptyList())
             .firstOrNull { it.BSSID == bssid }
             ?.capabilities ?: return WifiSecurityType.OPEN
         return WifiSecurityType.from(capabilities)

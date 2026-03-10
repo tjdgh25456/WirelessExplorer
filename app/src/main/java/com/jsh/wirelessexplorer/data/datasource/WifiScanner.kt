@@ -6,7 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.ConnectivityManager
+import android.net.Network
 import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import com.jsh.wirelessexplorer.di.IoDispatcher
@@ -102,39 +104,98 @@ class WifiScanner @Inject constructor(
             }
         }
 
-        val filter = IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)
-        context.registerReceiver(receiver, filter)
+        // BroadcastReceiver 등록 (예외 시 Flow 종료)
+        try {
+            context.registerReceiver(receiver, IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION))
+        } catch (e: Exception) {
+            Timber.e(e, "Wi-Fi 스캔 리시버 등록 실패")
+            close(e)
+            return@callbackFlow
+        }
 
         // 초기 캐시 결과 전송 후 새 스캔 요청
         if (cachedNetworks.isNotEmpty()) {
-            trySend(cachedNetworks).also { result ->
-                if (result.isFailure) Timber.w("trySend 실패: Wi-Fi 초기 캐시 전송")
-            }
+            trySend(cachedNetworks)
         }
 
         @Suppress("DEPRECATION")
         val started = wifiManager.startScan()
         if (!started) {
             Timber.w("Wi-Fi 스캔 시작 실패, 캐시된 결과 사용")
-            trySend(mapScanResults(connectedBssid).also { cachedNetworks = it }).also { result ->
-                if (result.isFailure) Timber.w("trySend 실패: Wi-Fi 폴백 결과 전송")
-            }
+            trySend(mapScanResults(connectedBssid).also { cachedNetworks = it })
         }
 
         awaitClose {
             Timber.d("Wi-Fi 스캔 리시버 해제")
-            context.unregisterReceiver(receiver)
+            try {
+                context.unregisterReceiver(receiver)
+            } catch (e: IllegalArgumentException) {
+                Timber.w(e, "Wi-Fi 리시버 이미 해제됨")
+            }
         }
     }.flowOn(ioDispatcher)
 
-    /** 현재 연결된 네트워크 정보를 반환한다. */
+    /**
+     * 현재 연결된 네트워크 정보를 실시간 관찰한다.
+     * NetworkCallback을 통해 연결 상태 변경 시마다 새로운 값을 방출한다.
+     */
+    @SuppressLint("MissingPermission")
+    fun observeConnectionInfo(): Flow<WifiConnectionInfo?> = callbackFlow {
+        val request = NetworkRequest.Builder()
+            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+            .build()
+
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onCapabilitiesChanged(
+                network: Network,
+                capabilities: NetworkCapabilities,
+            ) {
+                trySend(buildConnectionInfo(capabilities))
+            }
+
+            override fun onLost(network: Network) {
+                Timber.d("Wi-Fi 연결 해제됨")
+                trySend(null)
+            }
+        }
+
+        try {
+            connectivityManager.registerNetworkCallback(request, callback)
+        } catch (e: Exception) {
+            Timber.e(e, "Wi-Fi 연결 정보 콜백 등록 실패")
+            close(e)
+            return@callbackFlow
+        }
+
+        // 초기값 즉시 방출
+        trySend(getConnectionInfo())
+
+        awaitClose {
+            Timber.d("Wi-Fi 연결 정보 콜백 해제")
+            try {
+                connectivityManager.unregisterNetworkCallback(callback)
+            } catch (e: IllegalArgumentException) {
+                Timber.w(e, "Wi-Fi 연결 콜백 이미 해제됨")
+            }
+        }
+    }.flowOn(ioDispatcher)
+
+    /** 현재 연결된 네트워크 정보를 1회 조회한다. */
     @SuppressLint("MissingPermission")
     fun getConnectionInfo(): WifiConnectionInfo? {
         val network = connectivityManager.activeNetwork ?: return null
         val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return null
-
         if (!capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) return null
+        return buildConnectionInfo(capabilities)
+    }
 
+    fun isWifiEnabled(): Boolean = wifiManager.isWifiEnabled
+
+    // -- private helpers --
+
+    /** NetworkCapabilities에서 WifiConnectionInfo를 추출한다. */
+    @SuppressLint("MissingPermission")
+    private fun buildConnectionInfo(capabilities: NetworkCapabilities): WifiConnectionInfo? {
         val wifiInfo = capabilities.transportInfo as? WifiInfo ?: return null
         val ssid = wifiInfo.ssid
             ?.removePrefix("\"")
@@ -145,13 +206,11 @@ class WifiScanner @Inject constructor(
         val frequency = wifiInfo.frequency
         val channel = frequencyToChannel(frequency)
         val ipAddr = formatIpAddress(wifiInfo.ipAddress)
-
-        // 현재 연결된 네트워크의 보안 유형 파악
         val securityType = resolveConnectedSecurityType(wifiInfo.bssid)
 
         // 연결된 네트워크의 Wi-Fi 표준과 채널 폭 파악
         val scanResult = wifiInfo.bssid?.let { bssid ->
-            wifiManager.scanResults.firstOrNull { it.BSSID == bssid }
+            (wifiManager.scanResults ?: emptyList()).firstOrNull { it.BSSID == bssid }
         }
         val wifiStandard = scanResult?.let {
             WifiStandard.from(it.wifiStandard, frequency)
@@ -172,13 +231,9 @@ class WifiScanner @Inject constructor(
         )
     }
 
-    fun isWifiEnabled(): Boolean = wifiManager.isWifiEnabled
-
-    // -- private helpers --
-
     @SuppressLint("MissingPermission")
     private fun mapScanResults(connectedBssid: String?): List<WifiNetwork> =
-        wifiManager.scanResults
+        (wifiManager.scanResults ?: emptyList())
             .map { result ->
                 WifiNetwork(
                     ssid = result.SSID.takeIf { it.isNotBlank() } ?: "(Hidden)",
@@ -206,7 +261,7 @@ class WifiScanner @Inject constructor(
     @SuppressLint("MissingPermission")
     private fun resolveConnectedSecurityType(bssid: String?): WifiSecurityType {
         if (bssid == null) return WifiSecurityType.OPEN
-        val scanResult = wifiManager.scanResults.firstOrNull { it.BSSID == bssid }
+        val scanResult = (wifiManager.scanResults ?: emptyList()).firstOrNull { it.BSSID == bssid }
         return scanResult?.let { WifiSecurityType.from(it.capabilities) } ?: WifiSecurityType.OPEN
     }
 

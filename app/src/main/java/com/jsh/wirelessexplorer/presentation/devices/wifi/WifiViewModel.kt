@@ -47,7 +47,7 @@ class WifiViewModel @Inject constructor(
         scanJob = viewModelScope.launch {
             scanWifiNetworks()
                 .onStart {
-                    _uiState.update { it.copy(isScanning = true, error = null) }
+                    _uiState.update { it.copy(isScanning = true, error = null, networks = emptyList()) }
                 }
                 .onCompletion {
                     _uiState.update { it.copy(isScanning = false) }

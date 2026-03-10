@@ -1,14 +1,12 @@
 package com.jsh.wirelessexplorer.data.datasource
 
 import android.annotation.SuppressLint
-import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothAdapter
 import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
-import android.content.Context
 import com.jsh.wirelessexplorer.data.mapper.toBleDevice
 import com.jsh.wirelessexplorer.domain.model.BleDevice
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -25,14 +23,8 @@ private const val EMIT_INTERVAL_MS = 500L
 
 @Singleton
 class BleScanner @Inject constructor(
-    @ApplicationContext private val context: Context,
+    private val bluetoothAdapter: BluetoothAdapter?,
 ) {
-
-    private val bluetoothManager by lazy {
-        context.getSystemService(BluetoothManager::class.java)
-    }
-
-    private val bluetoothAdapter by lazy { bluetoothManager.adapter }
 
     fun isBluetoothEnabled(): Boolean = bluetoothAdapter?.isEnabled == true
 
