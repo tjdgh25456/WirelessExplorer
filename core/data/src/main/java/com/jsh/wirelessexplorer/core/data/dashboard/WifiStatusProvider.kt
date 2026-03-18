@@ -127,7 +127,6 @@ class WifiStatusProvider @Inject constructor(
             ?.removePrefix("\"")
             ?.removeSuffix("\"")
             ?.takeIf { it != "<unknown ssid>" }
-            ?: return null
 
         val bssid = wifiInfo.bssid ?: ""
         val frequency = wifiInfo.frequency

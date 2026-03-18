@@ -1,7 +1,7 @@
 package com.jsh.wirelessexplorer.core.model
 
 data class WifiStatus(
-    val ssid: String,
+    val ssid: String?,
     val bssid: String,
     val rssi: Int,
     val linkSpeed: Int,

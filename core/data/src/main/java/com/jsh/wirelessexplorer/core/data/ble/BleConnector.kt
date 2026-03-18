@@ -7,7 +7,6 @@ import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import android.content.Context
 import com.jsh.wirelessexplorer.core.common.IoDispatcher
@@ -16,16 +15,17 @@ import com.jsh.wirelessexplorer.core.model.BleConnectionState
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -57,6 +57,14 @@ class BleConnector @Inject constructor(
     // 연결마다 새로 생성되는 GATT 오퍼레이션 직렬 큐
     private val activeQueue = AtomicReference<Channel<GattOperation>?>(null)
 
+    // GATT 수명 관리용 CoroutineScope (큐 프로세서, RSSI 폴링)
+    private var connectionScope: CoroutineScope? = null
+    private var retryCount = 0
+
+    // GATT 연결 상태 (ViewModel 수명과 무관하게 유지)
+    private val _connectionState = MutableStateFlow<BleConnectionState>(BleConnectionState.Idle)
+    val connectionState: StateFlow<BleConnectionState> = _connectionState
+
     // 현재 연결된 디바이스 추적
     private val connectedDevices = ConcurrentHashMap<String, BleConnectedDevice>()
     private val _connectedDevicesFlow = MutableStateFlow<List<BleConnectedDevice>>(emptyList())
@@ -73,199 +81,206 @@ class BleConnector @Inject constructor(
     private val pendingWrite = AtomicReference<CompletableDeferred<Result<Unit>>?>(null)
     private val pendingDescriptorWrite = AtomicReference<CompletableDeferred<Result<Unit>>?>(null)
 
+    private val gattCallback = object : BluetoothGattCallback() {
+        @SuppressLint("MissingPermission")
+        override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+            when {
+                status == GATT_ERROR_133 && retryCount < MAX_RETRY_COUNT -> {
+                    retryCount++
+                    Timber.d("GATT error 133 발생, 재시도 ($retryCount/$MAX_RETRY_COUNT)")
+                    gatt.close()
+                    gattRef = gatt.device.let { device ->
+                        device.connectGatt(context, false, this, BluetoothDevice.TRANSPORT_LE)
+                    }
+                }
+
+                newState == BluetoothProfile.STATE_CONNECTED && status == BluetoothGatt.GATT_SUCCESS -> {
+                    Timber.d("GATT 연결 성공: ${gatt.device.address}")
+                    retryCount = 0
+                    trackDeviceConnected(gatt.device)
+                    _connectionState.value = BleConnectionState.DiscoveringServices
+                    gatt.discoverServices()
+                }
+
+                newState == BluetoothProfile.STATE_DISCONNECTED -> {
+                    trackDeviceDisconnected(gatt.device.address)
+                    if (status != BluetoothGatt.GATT_SUCCESS) {
+                        Timber.e("GATT 연결 해제 (status=$status)")
+                        _connectionState.value = BleConnectionState.Error("Disconnected with error", status)
+                    } else {
+                        Timber.d("GATT 정상 연결 해제")
+                        _connectionState.value = BleConnectionState.Idle
+                    }
+                    cleanupPendingOperations()
+                }
+            }
+        }
+
+        @SuppressLint("MissingPermission")
+        override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                Timber.d("GATT 서비스 발견 완료: ${gatt.services.size}개")
+                val services = gatt.services.map { it.toGattServiceInfo() }
+                val addr = gatt.device.address
+                connectedDevices[addr]?.let { existing ->
+                    connectedDevices[addr] = existing.copy(serviceCount = services.size)
+                    _connectedDevicesFlow.value = connectedDevices.values.toList()
+                }
+                _connectionState.value = BleConnectionState.Connected(services)
+
+                // 서비스 발견 후 RSSI 폴링 시작
+                connectionScope?.launch {
+                    while (true) {
+                        delay(RSSI_POLL_INTERVAL_MS)
+                        gattRef?.readRemoteRssi()
+                    }
+                }
+            } else {
+                Timber.e("GATT 서비스 발견 실패: status=$status")
+                _connectionState.value = BleConnectionState.Error("Service discovery failed", status)
+            }
+        }
+
+        @Deprecated("Deprecated in API 33+")
+        override fun onCharacteristicRead(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            status: Int,
+        ) {
+            handleCharacteristicRead(characteristic.value, status)
+        }
+
+        override fun onCharacteristicRead(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            value: ByteArray,
+            status: Int,
+        ) {
+            handleCharacteristicRead(value, status)
+        }
+
+        override fun onCharacteristicWrite(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            status: Int,
+        ) {
+            val deferred = pendingWrite.getAndSet(null) ?: return
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                Timber.d("Characteristic 쓰기 성공: ${characteristic.uuid}")
+                deferred.safeComplete(Result.success(Unit))
+            } else {
+                Timber.e("Characteristic 쓰기 실패: status=$status")
+                deferred.safeComplete(Result.failure(Exception("Write failed with status: $status")))
+            }
+        }
+
+        @Deprecated("Deprecated in API 33+")
+        override fun onCharacteristicChanged(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+        ) {
+            handleCharacteristicChanged(characteristic.uuid.toString(), characteristic.value)
+        }
+
+        override fun onCharacteristicChanged(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            value: ByteArray,
+        ) {
+            handleCharacteristicChanged(characteristic.uuid.toString(), value)
+        }
+
+        override fun onDescriptorWrite(
+            gatt: BluetoothGatt,
+            descriptor: BluetoothGattDescriptor,
+            status: Int,
+        ) {
+            val deferred = pendingDescriptorWrite.getAndSet(null) ?: return
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                deferred.safeComplete(Result.success(Unit))
+            } else {
+                deferred.safeComplete(
+                    Result.failure(Exception("Descriptor write failed: $status")),
+                )
+            }
+        }
+
+        override fun onReadRemoteRssi(gatt: BluetoothGatt, rssi: Int, status: Int) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                updateConnectedDeviceRssi(gatt.device.address, rssi)
+            }
+        }
+    }
+
     /**
-     * BLE 디바이스에 GATT 연결을 수립하고 연결 상태를 Flow로 방출한다.
-     * GATT error 133 발생 시 최대 3회까지 재시도한다.
+     * BLE 디바이스에 GATT 연결을 수립하고 연결 상태 Flow를 반환한다.
+     * GATT 수명은 이 Flow의 수집 여부와 무관하게 유지된다.
+     * 연결 해제는 반드시 [disconnect]를 통해서만 수행한다.
      */
     @SuppressLint("MissingPermission")
-    fun connect(address: String): Flow<BleConnectionState> = callbackFlow {
+    fun connect(address: String): Flow<BleConnectionState> {
+        val current = _connectionState.value
+        val currentAddress = gattRef?.device?.address
+
+        // 같은 디바이스에 이미 연결 중이면 현재 상태를 그대로 관찰
+        if (currentAddress == address &&
+            (current is BleConnectionState.Connecting ||
+                current is BleConnectionState.DiscoveringServices ||
+                current is BleConnectionState.Connected)
+        ) {
+            return connectionState
+        }
+
+        // 다른 디바이스 연결 요청 → 기존 연결 정리
+        if (currentAddress != null && currentAddress != address) {
+            disconnect()
+        }
+
         val device = bluetoothAdapter?.getRemoteDevice(address)
         if (device == null) {
-            trySend(BleConnectionState.Error("Device not found", -1)).also {
-                if (it.isFailure) Timber.w("trySend 실패: Device not found")
-            }
-            close()
-            return@callbackFlow
+            _connectionState.value = BleConnectionState.Error("Device not found", -1)
+            return connectionState
         }
 
-        var retryCount = 0
+        retryCount = 0
+        _connectionState.value = BleConnectionState.Connecting
 
-        val gattCallback = object : BluetoothGattCallback() {
-            override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-                when {
-                    // GATT error 133 자동 재시도
-                    status == GATT_ERROR_133 && retryCount < MAX_RETRY_COUNT -> {
-                        retryCount++
-                        Timber.d("GATT error 133 발생, 재시도 ($retryCount/$MAX_RETRY_COUNT)")
-                        gatt.close()
-                        gattRef = device.connectGatt(context, false, this, BluetoothDevice.TRANSPORT_LE)
-                    }
+        // 이전 연결 리소스 정리
+        connectionScope?.cancel()
+        activeQueue.getAndSet(null)?.close()
 
-                    newState == BluetoothProfile.STATE_CONNECTED && status == BluetoothGatt.GATT_SUCCESS -> {
-                        Timber.d("GATT 연결 성공: $address")
-                        retryCount = 0
-                        trackDeviceConnected(device)
-                        trySend(BleConnectionState.DiscoveringServices).also {
-                            if (it.isFailure) Timber.w("trySend 실패: DiscoveringServices")
-                        }
-                        gatt.discoverServices()
-                    }
-
-                    newState == BluetoothProfile.STATE_DISCONNECTED -> {
-                        trackDeviceDisconnected(address)
-                        if (status != BluetoothGatt.GATT_SUCCESS) {
-                            Timber.e("GATT 연결 해제 (status=$status)")
-                            trySend(BleConnectionState.Error("Disconnected with error", status)).also {
-                                if (it.isFailure) Timber.w("trySend 실패: Error")
-                            }
-                        } else {
-                            Timber.d("GATT 정상 연결 해제")
-                            trySend(BleConnectionState.Idle).also {
-                                if (it.isFailure) Timber.w("trySend 실패: Idle")
-                            }
-                        }
-                        cleanupPendingOperations()
-                    }
-                }
-            }
-
-            override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
-                if (status == BluetoothGatt.GATT_SUCCESS) {
-                    Timber.d("GATT 서비스 발견 완료: ${gatt.services.size}개")
-                    val services = gatt.services.map { it.toGattServiceInfo() }
-                    // 서비스 개수 업데이트
-                    val addr = gatt.device.address
-                    connectedDevices[addr]?.let { existing ->
-                        connectedDevices[addr] = existing.copy(serviceCount = services.size)
-                        _connectedDevicesFlow.value = connectedDevices.values.toList()
-                    }
-                    trySend(BleConnectionState.Connected(services)).also {
-                        if (it.isFailure) Timber.w("trySend 실패: Connected")
-                    }
-                } else {
-                    Timber.e("GATT 서비스 발견 실패: status=$status")
-                    trySend(BleConnectionState.Error("Service discovery failed", status)).also {
-                        if (it.isFailure) Timber.w("trySend 실패: Error (service discovery)")
-                    }
-                }
-            }
-
-            @Deprecated("Deprecated in API 33+")
-            override fun onCharacteristicRead(
-                gatt: BluetoothGatt,
-                characteristic: BluetoothGattCharacteristic,
-                status: Int,
-            ) {
-                handleCharacteristicRead(characteristic.value, status)
-            }
-
-            override fun onCharacteristicRead(
-                gatt: BluetoothGatt,
-                characteristic: BluetoothGattCharacteristic,
-                value: ByteArray,
-                status: Int,
-            ) {
-                handleCharacteristicRead(value, status)
-            }
-
-            override fun onCharacteristicWrite(
-                gatt: BluetoothGatt,
-                characteristic: BluetoothGattCharacteristic,
-                status: Int,
-            ) {
-                val deferred = pendingWrite.getAndSet(null) ?: return
-                if (status == BluetoothGatt.GATT_SUCCESS) {
-                    Timber.d("Characteristic 쓰기 성공: ${characteristic.uuid}")
-                    deferred.safeComplete(Result.success(Unit))
-                } else {
-                    Timber.e("Characteristic 쓰기 실패: status=$status")
-                    deferred.safeComplete(Result.failure(Exception("Write failed with status: $status")))
-                }
-            }
-
-            @Deprecated("Deprecated in API 33+")
-            override fun onCharacteristicChanged(
-                gatt: BluetoothGatt,
-                characteristic: BluetoothGattCharacteristic,
-            ) {
-                handleCharacteristicChanged(characteristic.uuid.toString(), characteristic.value)
-            }
-
-            override fun onCharacteristicChanged(
-                gatt: BluetoothGatt,
-                characteristic: BluetoothGattCharacteristic,
-                value: ByteArray,
-            ) {
-                handleCharacteristicChanged(characteristic.uuid.toString(), value)
-            }
-
-            override fun onDescriptorWrite(
-                gatt: BluetoothGatt,
-                descriptor: BluetoothGattDescriptor,
-                status: Int,
-            ) {
-                val deferred = pendingDescriptorWrite.getAndSet(null) ?: return
-                if (status == BluetoothGatt.GATT_SUCCESS) {
-                    deferred.safeComplete(Result.success(Unit))
-                } else {
-                    deferred.safeComplete(
-                        Result.failure(Exception("Descriptor write failed: $status")),
-                    )
-                }
-            }
-
-            override fun onReadRemoteRssi(gatt: BluetoothGatt, rssi: Int, status: Int) {
-                if (status == BluetoothGatt.GATT_SUCCESS) {
-                    updateConnectedDeviceRssi(gatt.device.address, rssi)
-                }
-            }
-        }
-
-        trySend(BleConnectionState.Connecting).also {
-            if (it.isFailure) Timber.w("trySend 실패: Connecting")
-        }
-        gattRef = device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
+        val scope = CoroutineScope(ioDispatcher + SupervisorJob())
+        connectionScope = scope
 
         val queue = Channel<GattOperation>(Channel.BUFFERED)
         activeQueue.set(queue)
 
-        launch {
+        scope.launch {
             for (operation in queue) {
                 delay(OP_QUEUE_DELAY_MS)
                 operation.execute()
             }
         }
 
-        // 실시간 RSSI 폴링 (연결 유지 시 2초 간격)
-        @SuppressLint("MissingPermission")
-        launch {
-            while (true) {
-                delay(RSSI_POLL_INTERVAL_MS)
-                gattRef?.readRemoteRssi()
-            }
-        }
+        gattRef = device.connectGatt(context, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
 
-        awaitClose {
-            Timber.d("GATT 연결 정리")
-            cleanupPendingOperations()
-            activeQueue.getAndSet(null)?.close()
-            gattRef?.let { gatt ->
-                gatt.disconnect()
-                gatt.close()
-            }
-            gattRef = null
-        }
+        return connectionState
     }
 
     @SuppressLint("MissingPermission")
     fun disconnect() {
         cleanupPendingOperations()
+        connectionScope?.cancel()
+        connectionScope = null
         activeQueue.getAndSet(null)?.close()
+        val address = gattRef?.device?.address
         gattRef?.let { gatt ->
             gatt.disconnect()
             gatt.close()
         }
         gattRef = null
+        if (address != null) trackDeviceDisconnected(address)
+        _connectionState.value = BleConnectionState.Idle
     }
 
     /**

@@ -208,6 +208,8 @@ class BleViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        disconnect()
+        scanJob?.cancel()
+        connectionJob?.cancel()
+        notifyJob?.cancel()
     }
 }

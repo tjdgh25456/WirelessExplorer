@@ -71,7 +71,7 @@ fun ConnectionStatusCard(
 
             // SSID
             Text(
-                text = wifiStatus.ssid,
+                text = wifiStatus.ssid ?: stringResource(R.string.label_wifi_connected),
                 style = MaterialTheme.typography.headlineMedium,
                 color = OnSurface,
                 fontWeight = FontWeight.Bold,

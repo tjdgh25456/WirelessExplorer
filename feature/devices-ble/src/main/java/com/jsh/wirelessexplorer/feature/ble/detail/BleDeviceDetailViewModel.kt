@@ -157,6 +157,7 @@ class BleDeviceDetailViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        disconnect()
+        connectionJob?.cancel()
+        notifyJob?.cancel()
     }
 }

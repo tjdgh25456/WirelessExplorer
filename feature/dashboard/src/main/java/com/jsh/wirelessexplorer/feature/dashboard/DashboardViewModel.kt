@@ -6,6 +6,7 @@ import com.jsh.wirelessexplorer.core.domain.ble.ObserveBleConnectionsUseCase
 import com.jsh.wirelessexplorer.core.domain.dashboard.ObserveDashboardStatsUseCase
 import com.jsh.wirelessexplorer.core.domain.dashboard.ObserveTrafficSpeedUseCase
 import com.jsh.wirelessexplorer.core.domain.wifi.ObserveWifiStatusUseCase
+import com.jsh.wirelessexplorer.core.model.DashboardStats
 import com.jsh.wirelessexplorer.core.model.TrafficSpeed
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,10 +27,17 @@ class DashboardViewModel @Inject constructor(
 ) : ViewModel() {
 
     val uiState: StateFlow<DashboardUiState> = combine(
-        observeWifiStatus(),
-        observeDashboardStats(),
-        observeBleConnections(),
-        observeTrafficSpeed().onStart { emit(TrafficSpeed()) },
+        observeWifiStatus()
+            .onStart { emit(null) }
+            .catch { Timber.e(it, "WiFi 상태 수집 오류"); emit(null) },
+        observeDashboardStats()
+            .onStart { emit(DashboardStats()) }
+            .catch { Timber.e(it, "통계 수집 오류"); emit(DashboardStats()) },
+        observeBleConnections()
+            .catch { Timber.e(it, "BLE 연결 수집 오류"); emit(emptyList()) },
+        observeTrafficSpeed()
+            .onStart { emit(TrafficSpeed()) }
+            .catch { Timber.e(it, "트래픽 수집 오류"); emit(TrafficSpeed()) },
     ) { wifiStatus, stats, bleDevices, speed ->
         DashboardUiState(
             wifiStatus = wifiStatus,
@@ -38,9 +46,6 @@ class DashboardViewModel @Inject constructor(
             stats = stats,
             isLoading = false,
         )
-    }.catch { throwable ->
-        Timber.e(throwable, "대시보드 상태 수집 오류")
-        emit(DashboardUiState(isLoading = false))
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
