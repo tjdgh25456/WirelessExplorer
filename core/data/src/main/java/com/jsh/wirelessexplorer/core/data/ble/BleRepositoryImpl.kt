@@ -16,6 +16,8 @@ class BleRepositoryImpl @Inject constructor(
 
     override fun scanDevices(): Flow<List<BleDevice>> = scanner.scanDevices()
 
+    override fun getScannedDevice(address: String): BleDevice? = scanner.getDevice(address)
+
     override fun connect(address: String): Flow<BleConnectionState> = connector.connect(address)
 
     override fun disconnect() = connector.disconnect()

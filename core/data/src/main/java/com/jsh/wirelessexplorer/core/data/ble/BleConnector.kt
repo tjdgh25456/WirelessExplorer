@@ -40,6 +40,7 @@ private const val GATT_ERROR_133 = 133
 private const val MAX_RETRY_COUNT = 3
 private const val OP_QUEUE_DELAY_MS = 50L
 private const val OP_TIMEOUT_MS = 5_000L
+private const val RSSI_POLL_INTERVAL_MS = 2_000L
 private const val CHARACTERISTIC_UPDATE_BUFFER_CAPACITY = 64
 private const val CCC_DESCRIPTOR_UUID = "00002902-0000-1000-8000-00805f9b34fb"
 
@@ -132,6 +133,12 @@ class BleConnector @Inject constructor(
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     Timber.d("GATT 서비스 발견 완료: ${gatt.services.size}개")
                     val services = gatt.services.map { it.toGattServiceInfo() }
+                    // 서비스 개수 업데이트
+                    val addr = gatt.device.address
+                    connectedDevices[addr]?.let { existing ->
+                        connectedDevices[addr] = existing.copy(serviceCount = services.size)
+                        _connectedDevicesFlow.value = connectedDevices.values.toList()
+                    }
                     trySend(BleConnectionState.Connected(services)).also {
                         if (it.isFailure) Timber.w("trySend 실패: Connected")
                     }
@@ -206,6 +213,12 @@ class BleConnector @Inject constructor(
                     )
                 }
             }
+
+            override fun onReadRemoteRssi(gatt: BluetoothGatt, rssi: Int, status: Int) {
+                if (status == BluetoothGatt.GATT_SUCCESS) {
+                    updateConnectedDeviceRssi(gatt.device.address, rssi)
+                }
+            }
         }
 
         trySend(BleConnectionState.Connecting).also {
@@ -220,6 +233,14 @@ class BleConnector @Inject constructor(
             for (operation in queue) {
                 delay(OP_QUEUE_DELAY_MS)
                 operation.execute()
+            }
+        }
+
+        // 실시간 RSSI 폴링 (연결 유지 시 2초 간격)
+        launch {
+            while (true) {
+                delay(RSSI_POLL_INTERVAL_MS)
+                gattRef?.readRemoteRssi()
             }
         }
 
@@ -398,15 +419,23 @@ class BleConnector @Inject constructor(
 
     @SuppressLint("MissingPermission")
     private fun trackDeviceConnected(device: BluetoothDevice) {
+        val serviceCount = gattRef?.services?.size ?: 0
         connectedDevices[device.address] = BleConnectedDevice(
             address = device.address,
             name = device.name,
+            serviceCount = serviceCount,
         )
         _connectedDevicesFlow.value = connectedDevices.values.toList()
     }
 
     private fun trackDeviceDisconnected(address: String) {
         connectedDevices.remove(address)
+        _connectedDevicesFlow.value = connectedDevices.values.toList()
+    }
+
+    private fun updateConnectedDeviceRssi(address: String, rssi: Int) {
+        val existing = connectedDevices[address] ?: return
+        connectedDevices[address] = existing.copy(rssi = rssi)
         _connectedDevicesFlow.value = connectedDevices.values.toList()
     }
 

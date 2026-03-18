@@ -35,6 +35,7 @@ private enum class DeviceTab(val labelResId: Int) {
 @Composable
 fun DevicesScreen(
     onNavigateToDetail: (Long) -> Unit,
+    onNavigateToBleDetail: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     initialTab: Int = 0,
 ) {
@@ -73,7 +74,10 @@ fun DevicesScreen(
             modifier = Modifier.fillMaxSize(),
         ) { page ->
             when (tabs[page]) {
-                DeviceTab.BLUETOOTH -> BleScreen(onNavigateToDetail = onNavigateToDetail)
+                DeviceTab.BLUETOOTH -> BleScreen(
+                    onNavigateToDetail = onNavigateToDetail,
+                    onNavigateToBleDetail = onNavigateToBleDetail,
+                )
                 DeviceTab.WIFI -> WifiScreen(onNavigateToDetail = onNavigateToDetail)
                 DeviceTab.NFC -> NfcScreen(onNavigateToDetail = onNavigateToDetail)
                 DeviceTab.UWB -> UwbScreen(onNavigateToDetail = onNavigateToDetail)

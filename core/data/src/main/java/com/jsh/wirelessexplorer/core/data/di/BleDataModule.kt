@@ -10,6 +10,8 @@ import com.jsh.wirelessexplorer.core.domain.ble.ConnectBleDeviceUseCaseImpl
 import com.jsh.wirelessexplorer.core.domain.ble.DisconnectBleDeviceUseCase
 import com.jsh.wirelessexplorer.core.domain.ble.DisconnectBleDeviceUseCaseImpl
 import com.jsh.wirelessexplorer.core.domain.ble.GetBluetoothEnabledUseCase
+import com.jsh.wirelessexplorer.core.domain.ble.GetScannedBleDeviceUseCase
+import com.jsh.wirelessexplorer.core.domain.ble.GetScannedBleDeviceUseCaseImpl
 import com.jsh.wirelessexplorer.core.domain.ble.GetBluetoothEnabledUseCaseImpl
 import com.jsh.wirelessexplorer.core.domain.ble.ObserveBleConnectionsUseCase
 import com.jsh.wirelessexplorer.core.domain.ble.ObserveBleConnectionsUseCaseImpl
@@ -65,6 +67,9 @@ abstract class BleDataModule {
 
     @Binds
     abstract fun bindWriteGattCharacteristic(impl: WriteGattCharacteristicUseCaseImpl): WriteGattCharacteristicUseCase
+
+    @Binds
+    abstract fun bindGetScannedBleDevice(impl: GetScannedBleDeviceUseCaseImpl): GetScannedBleDeviceUseCase
 
     companion object {
 

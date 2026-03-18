@@ -10,6 +10,7 @@ import androidx.navigation.toRoute
 import com.jsh.wirelessexplorer.core.model.TechType
 import com.jsh.wirelessexplorer.core.navigation.AnalyzeRoute
 import com.jsh.wirelessexplorer.core.navigation.DashboardRoute
+import com.jsh.wirelessexplorer.core.navigation.BleDeviceDetailRoute
 import com.jsh.wirelessexplorer.core.navigation.DeviceDetailRoute
 import com.jsh.wirelessexplorer.core.navigation.DevicesRoute
 import com.jsh.wirelessexplorer.core.navigation.HistoryRoute
@@ -18,6 +19,7 @@ import com.jsh.wirelessexplorer.core.navigation.SearchRoute
 import com.jsh.wirelessexplorer.core.navigation.SettingsRoute
 import com.jsh.wirelessexplorer.feature.analyze.AnalyzeScreen
 import com.jsh.wirelessexplorer.feature.dashboard.DashboardScreen
+import com.jsh.wirelessexplorer.feature.ble.detail.BleDeviceDetailScreen
 import com.jsh.wirelessexplorer.feature.detail.DeviceDetailScreen
 import com.jsh.wirelessexplorer.feature.devices.DevicesScreen
 import com.jsh.wirelessexplorer.feature.history.HistoryScreen
@@ -51,6 +53,9 @@ fun WirelessExplorerNavHost(
                 onNavigateToSettings = {
                     navController.navigate(SettingsRoute)
                 },
+                onNavigateToBleDetail = { address ->
+                    navController.navigate(BleDeviceDetailRoute(address))
+                },
             )
         }
 
@@ -60,6 +65,9 @@ fun WirelessExplorerNavHost(
                 initialTab = route.initialTab,
                 onNavigateToDetail = { deviceId ->
                     navController.navigate(DeviceDetailRoute(deviceId))
+                },
+                onNavigateToBleDetail = { address ->
+                    navController.navigate(BleDeviceDetailRoute(address))
                 },
             )
         }
@@ -102,6 +110,12 @@ fun WirelessExplorerNavHost(
                         popUpTo(OnboardingRoute) { inclusive = true }
                     }
                 },
+            )
+        }
+
+        composable<BleDeviceDetailRoute> {
+            BleDeviceDetailScreen(
+                onNavigateBack = { navController.popBackStack() },
             )
         }
 

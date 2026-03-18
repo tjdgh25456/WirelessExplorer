@@ -11,3 +11,4 @@ import kotlinx.serialization.Serializable
 @Serializable data object SearchRoute
 @Serializable data object OnboardingRoute
 @Serializable data class DeviceDetailRoute(val deviceId: Long)
+@Serializable data class BleDeviceDetailRoute(val address: String)

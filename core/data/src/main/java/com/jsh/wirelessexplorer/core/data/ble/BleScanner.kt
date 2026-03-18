@@ -33,6 +33,11 @@ class BleScanner @Inject constructor(
     private val timeProvider: TimeProvider,
 ) {
 
+    // 스캔 결과 캐시 — 상세 화면에서 최신 데이터 조회용
+    private val latestResults = ConcurrentHashMap<String, BleDevice>()
+
+    fun getDevice(address: String): BleDevice? = latestResults[address]
+
     fun isBluetoothEnabled(): Boolean = bluetoothAdapter?.isEnabled == true
 
     fun observeBluetoothEnabled(): Flow<Boolean> = callbackFlow {
@@ -91,9 +96,11 @@ class BleScanner @Inject constructor(
             while (true) {
                 delay(EMIT_INTERVAL_MS)
                 if (isDirty.compareAndSet(true, false)) {
+                    val now = timeProvider.now()
                     val sorted = discoveredDevices.values
                         .sortedByDescending { it.rssi }
-                        .map { it.toBleDevice(timeProvider.now()) }
+                        .map { it.toBleDevice(now) }
+                    sorted.forEach { latestResults[it.address] = it }
                     trySend(sorted).also { result ->
                         if (result.isFailure) Timber.w("trySend 실패: 배치 방출")
                     }
@@ -112,6 +119,7 @@ class BleScanner @Inject constructor(
         awaitClose {
             Timber.d("BLE 스캔 중지")
             scanner.stopScan(scanCallback)
+            latestResults.clear()
         }
     }
 }

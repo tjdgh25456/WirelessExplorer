@@ -1,13 +1,17 @@
 package com.jsh.wirelessexplorer.core.data.ble
 
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattService
 import android.bluetooth.le.ScanResult
+import com.jsh.wirelessexplorer.core.model.BleAdvertisingData
 import com.jsh.wirelessexplorer.core.model.BleBondState
+import com.jsh.wirelessexplorer.core.model.BleDataStatus
 import com.jsh.wirelessexplorer.core.model.BleDevice
 import com.jsh.wirelessexplorer.core.model.BleDeviceType
+import com.jsh.wirelessexplorer.core.model.BlePhy
 import com.jsh.wirelessexplorer.core.model.GattCharacteristicInfo
 import com.jsh.wirelessexplorer.core.model.GattDescriptorInfo
 import com.jsh.wirelessexplorer.core.model.GattProperty
@@ -82,7 +86,45 @@ internal fun ScanResult.toBleDevice(now: Long): BleDevice {
         txPower = txPower,
         serviceUuids = serviceUuids,
         manufacturerData = mfrData,
+        advertisingData = toBleAdvertisingData(),
     )
+}
+
+/** ScanRecord.getAdvertiseFlags()가 Flags AD type 부재 시 반환하는 센티널 */
+private const val ADVERTISE_FLAGS_NOT_PRESENT = -1
+
+@SuppressLint("MissingPermission")
+private fun ScanResult.toBleAdvertisingData(): BleAdvertisingData {
+    val record = scanRecord
+    val svcData = buildMap {
+        record?.serviceData?.forEach { (uuid, bytes) ->
+            put(uuid.uuid.toString().lowercase(), bytes)
+        }
+    }
+    return BleAdvertisingData(
+        localName = record?.deviceName,
+        flags = record?.advertiseFlags?.takeIf { it != ADVERTISE_FLAGS_NOT_PRESENT },
+        primaryPhy = primaryPhy.toBlePhy(),
+        secondaryPhy = secondaryPhy.toBlePhy(),
+        advertisingSid = advertisingSid.takeIf { it != ScanResult.SID_NOT_PRESENT },
+        dataStatus = dataStatus.toBleDataStatus(),
+        serviceData = svcData,
+        rawBytes = record?.bytes,
+    )
+}
+
+private fun Int.toBlePhy(): BlePhy = when (this) {
+    BluetoothDevice.PHY_LE_1M -> BlePhy.PHY_1M
+    BluetoothDevice.PHY_LE_2M -> BlePhy.PHY_2M
+    BluetoothDevice.PHY_LE_CODED -> BlePhy.PHY_CODED
+    else -> BlePhy.UNKNOWN
+}
+
+private fun Int.toBleDataStatus(): BleDataStatus = when (this) {
+    ScanResult.DATA_COMPLETE -> BleDataStatus.COMPLETE
+    ScanResult.DATA_TRUNCATED -> BleDataStatus.TRUNCATED
+    1 -> BleDataStatus.INCOMPLETE // ScanResult에 상수 미정의, Extended Advertising 분할 수신 시
+    else -> BleDataStatus.UNKNOWN
 }
 
 internal fun Int.toBleDeviceType(): BleDeviceType = when (this) {

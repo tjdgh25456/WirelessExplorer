@@ -47,9 +47,11 @@ fun BleDeviceCard(
     device: BleDevice,
     isConnecting: Boolean,
     onConnectClick: () -> Unit,
+    onCardClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Card(
+        onClick = onCardClick,
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Surface),

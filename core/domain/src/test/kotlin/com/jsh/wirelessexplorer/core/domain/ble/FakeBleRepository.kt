@@ -10,8 +10,11 @@ import kotlinx.coroutines.flow.flowOf
 class FakeBleRepository : BleRepository {
 
     var connectFlow: Flow<BleConnectionState> = flowOf()
+    var scannedDevices: MutableMap<String, BleDevice> = mutableMapOf()
 
     override fun scanDevices(): Flow<List<BleDevice>> = emptyFlow()
+
+    override fun getScannedDevice(address: String): BleDevice? = scannedDevices[address]
 
     override fun connect(address: String): Flow<BleConnectionState> = connectFlow
 

@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface BleRepository {
     fun scanDevices(): Flow<List<BleDevice>>
+    fun getScannedDevice(address: String): BleDevice?
     fun connect(address: String): Flow<BleConnectionState>
     fun disconnect()
     suspend fun readCharacteristic(serviceUuid: String, charUuid: String): Result<ByteArray>

@@ -10,6 +10,7 @@ data class BleDevice(
     val txPower: Int? = null,
     val serviceUuids: List<String> = emptyList(),
     val manufacturerData: Map<Int, ByteArray> = emptyMap(),
+    val advertisingData: BleAdvertisingData? = null,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -19,7 +20,8 @@ data class BleDevice(
             lastSeen == other.lastSeen && txPower == other.txPower &&
             serviceUuids == other.serviceUuids &&
             manufacturerData.keys == other.manufacturerData.keys &&
-            manufacturerData.all { (k, v) -> other.manufacturerData[k].contentEquals(v) }
+            manufacturerData.all { (k, v) -> other.manufacturerData[k].contentEquals(v) } &&
+            advertisingData == other.advertisingData
     }
 
     override fun hashCode(): Int {

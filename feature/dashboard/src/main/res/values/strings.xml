@@ -26,4 +26,6 @@
     <string name="btn_start_scan">Start Scan</string>
     <string name="btn_open_wifi">Open Wi-Fi</string>
     <string name="label_ble_connected">BLE Connected (%1$d)</string>
+    <string name="label_unknown_device">Unknown</string>
+    <string name="label_services_count">%1$d services</string>
 </resources>

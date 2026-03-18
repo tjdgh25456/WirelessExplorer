@@ -73,6 +73,7 @@ import com.jsh.wirelessexplorer.core.designsystem.theme.WirelessExplorerTheme
 @Composable
 fun BleScreen(
     onNavigateToDetail: (Long) -> Unit = {},
+    onNavigateToBleDetail: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: BleViewModel = hiltViewModel(),
 ) {
@@ -86,7 +87,11 @@ fun BleScreen(
         rationaleMessage = stringResource(R.string.desc_ble_permission),
     ) {
         RequireLocationService {
-            BleScreenContent(modifier = modifier, viewModel = viewModel)
+            BleScreenContent(
+                modifier = modifier,
+                viewModel = viewModel,
+                onNavigateToBleDetail = onNavigateToBleDetail,
+            )
         }
     }
 }
@@ -95,6 +100,7 @@ fun BleScreen(
 private fun BleScreenContent(
     modifier: Modifier = Modifier,
     viewModel: BleViewModel,
+    onNavigateToBleDetail: (String) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -293,6 +299,9 @@ private fun BleScreenContent(
                                 connectingAddress = device.address
                                 viewModel.stopScan()
                                 viewModel.connect(device.address, device.name)
+                            },
+                            onCardClick = {
+                                onNavigateToBleDetail(device.address)
                             },
                         )
                     }

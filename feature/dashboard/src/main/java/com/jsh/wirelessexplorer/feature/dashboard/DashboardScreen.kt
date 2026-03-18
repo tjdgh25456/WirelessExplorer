@@ -43,6 +43,7 @@ fun DashboardScreen(
     onNavigateToDevices: () -> Unit,
     onNavigateToWifi: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    onNavigateToBleDetail: (String) -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -52,6 +53,7 @@ fun DashboardScreen(
         onNavigateToDevices = onNavigateToDevices,
         onNavigateToWifi = onNavigateToWifi,
         onNavigateToSettings = onNavigateToSettings,
+        onNavigateToBleDetail = onNavigateToBleDetail,
     )
 }
 
@@ -62,6 +64,7 @@ private fun DashboardScreenContent(
     onNavigateToDevices: () -> Unit,
     onNavigateToWifi: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    onNavigateToBleDetail: (String) -> Unit = {},
 ) {
     Scaffold(
         containerColor = Background,
@@ -125,7 +128,10 @@ private fun DashboardScreenContent(
             // BLE 연결 기기 (연결된 기기가 있을 때만)
             if (uiState.bleConnectedDevices.isNotEmpty()) {
                 item(key = "ble_connected") {
-                    BleConnectedCard(devices = uiState.bleConnectedDevices)
+                    BleConnectedCard(
+                        devices = uiState.bleConnectedDevices,
+                        onDeviceClick = onNavigateToBleDetail,
+                    )
                 }
             }
 
