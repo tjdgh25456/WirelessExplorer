@@ -1,0 +1,5 @@
+com.jsh.wirelessexplorer.core.navigation
+string label_nav_analyze
+string label_nav_dashboard
+string label_nav_devices
+string label_nav_history

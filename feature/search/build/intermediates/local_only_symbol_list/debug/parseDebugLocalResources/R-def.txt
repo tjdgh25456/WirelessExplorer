@@ -1,0 +1,15 @@
+R_DEF: Internal format may change without notice
+local
+string btn_clear_all
+string cd_back
+string cd_clear
+string cd_delete_search
+string desc_try_scanning
+string empty_no_results
+string filter_all
+string filter_ble
+string filter_nfc
+string filter_uwb
+string filter_wifi
+string hint_search
+string label_recent_searches

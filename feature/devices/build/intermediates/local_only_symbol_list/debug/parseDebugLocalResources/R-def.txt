@@ -1,0 +1,6 @@
+R_DEF: Internal format may change without notice
+local
+string tab_bluetooth
+string tab_nfc
+string tab_uwb
+string tab_wifi

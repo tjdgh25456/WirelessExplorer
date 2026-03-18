@@ -1,0 +1,10 @@
+com.jsh.wirelessexplorer.feature.analyze
+string empty_no_data_desc
+string empty_no_data_title
+string empty_no_device_data
+string label_best_signal
+string label_connections
+string label_dbm_format
+string label_dbm_placeholder
+string label_devices
+string label_top_devices

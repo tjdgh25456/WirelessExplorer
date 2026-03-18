@@ -44,6 +44,31 @@ android {
 }
 
 dependencies {
+    // Core
+    implementation(projects.core.common)
+    implementation(projects.core.model)
+    implementation(projects.core.domain)
+    implementation(projects.core.data)
+    implementation(projects.core.designsystem)
+    implementation(projects.core.ui)
+    implementation(projects.core.navigation)
+    implementation(projects.core.database)
+    implementation(projects.core.datastore)
+
+    // Feature
+    implementation(projects.feature.dashboard)
+    implementation(projects.feature.devices)
+    implementation(projects.feature.devicesBle)
+    implementation(projects.feature.devicesWifi)
+    implementation(projects.feature.devicesNfc)
+    implementation(projects.feature.devicesUwb)
+    implementation(projects.feature.detail)
+    implementation(projects.feature.history)
+    implementation(projects.feature.search)
+    implementation(projects.feature.analyze)
+    implementation(projects.feature.settings)
+    implementation(projects.feature.onboarding)
+
     // AndroidX Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime)
@@ -68,29 +93,12 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 
-    // Database - Room
-    implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
-    ksp(libs.room.compiler)
-
-    // DataStore
-    implementation(libs.datastore.preferences)
-
     // Serialization
     implementation(libs.kotlinx.serialization.json)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
-
-    // Chart - Vico
-    implementation(libs.vico.compose)
-
-    // Animation - Lottie
-    implementation(libs.lottie.compose)
-
-    // Permissions - Accompanist
-    implementation(libs.accompanist.permissions)
 
     // Splash
     implementation(libs.androidx.splashscreen)

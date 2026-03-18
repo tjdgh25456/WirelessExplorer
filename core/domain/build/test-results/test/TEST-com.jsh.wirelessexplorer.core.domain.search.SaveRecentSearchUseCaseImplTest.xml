@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.jsh.wirelessexplorer.core.domain.search.SaveRecentSearchUseCaseImplTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-03-18T00:22:19.648Z" hostname="JSHui-MacBookPro.local" time="0.0">
+  <properties/>
+  <testcase name="invoke_delegatesSaveToRepository" classname="com.jsh.wirelessexplorer.core.domain.search.SaveRecentSearchUseCaseImplTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

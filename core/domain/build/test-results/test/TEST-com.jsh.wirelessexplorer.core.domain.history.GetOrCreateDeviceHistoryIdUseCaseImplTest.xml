@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.jsh.wirelessexplorer.core.domain.history.GetOrCreateDeviceHistoryIdUseCaseImplTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-03-18T00:22:19.633Z" hostname="JSHui-MacBookPro.local" time="0.002">
+  <properties/>
+  <testcase name="invoke_whenDeviceNotFoundAfterUpsert_returnsFailure" classname="com.jsh.wirelessexplorer.core.domain.history.GetOrCreateDeviceHistoryIdUseCaseImplTest" time="0.001"/>
+  <testcase name="invoke_whenUpsertSucceeds_returnsDeviceId" classname="com.jsh.wirelessexplorer.core.domain.history.GetOrCreateDeviceHistoryIdUseCaseImplTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

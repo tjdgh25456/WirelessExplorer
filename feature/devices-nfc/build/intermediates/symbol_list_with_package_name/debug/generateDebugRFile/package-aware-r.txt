@@ -1,0 +1,27 @@
+com.jsh.wirelessexplorer.feature.nfc
+string btn_copy_all_data
+string btn_hide_raw_hex
+string btn_open_nfc_settings
+string btn_scan_again
+string btn_show_raw_hex
+string cd_tag_detected
+string desc_nfc_disabled
+string desc_nfc_not_supported
+string desc_position_device
+string label_bytes_format
+string label_hold_near_tag
+string label_language_format
+string label_ndef_records_format
+string label_nfc
+string label_nfc_active
+string label_record_external
+string label_record_mime
+string label_record_text
+string label_record_unknown
+string label_record_uri
+string label_tag_detected
+string label_tag_id
+string label_technologies
+string title_error
+string title_nfc_disabled
+string title_nfc_not_supported

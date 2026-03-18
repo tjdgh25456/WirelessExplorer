@@ -1,0 +1,13 @@
+package com.jsh.wirelessexplorer.core.model
+
+data class WifiStatus(
+    val ssid: String,
+    val bssid: String,
+    val rssi: Int,
+    val linkSpeed: Int,
+    val frequency: Int,
+    val ipAddress: String,
+    val securityType: WifiSecurityType,
+    val channel: Int,
+    val isConnected: Boolean,
+)

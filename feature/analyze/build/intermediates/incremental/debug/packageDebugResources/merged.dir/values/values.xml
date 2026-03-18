@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="empty_no_data_desc">Start scanning to see analytics\nabout your wireless environment</string>
+    <string name="empty_no_data_title">No Data Yet</string>
+    <string name="empty_no_device_data">No device data yet</string>
+    <string name="label_best_signal">Best Signal</string>
+    <string name="label_connections">Connections</string>
+    <string name="label_dbm_format">%1$d dBm</string>
+    <string name="label_dbm_placeholder">--</string>
+    <string name="label_devices">Devices</string>
+    <string name="label_top_devices">Top Devices</string>
+</resources>

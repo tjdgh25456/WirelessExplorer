@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="btn_check_compatibility">Check Compatibility</string>
+    <string name="btn_retry">Retry</string>
+    <string name="btn_start_ranging">START RANGING</string>
+    <string name="btn_stop_ranging">STOP RANGING</string>
+    <string name="desc_searching_uwb">Looking for nearby UWB devices</string>
+    <string name="desc_uwb_not_supported">This device does not support Ultra-Wideband.</string>
+    <string name="desc_uwb_permission">UWB ranging permission is needed to measure distance to nearby devices using Ultra-Wideband.</string>
+    <string name="desc_uwb_ready">Start ranging to measure distance to nearby UWB devices.</string>
+    <string name="label_azimuth">AZIMUTH</string>
+    <string name="label_distance">DISTANCE</string>
+    <string name="label_elevation">ELEVATION</string>
+    <string name="label_searching">Searching\u2026</string>
+    <string name="label_supported_devices">SUPPORTED DEVICES</string>
+    <string name="label_uwb">UWB</string>
+    <string name="title_ranging_error">Ranging Error</string>
+    <string name="title_uwb_not_supported">UWB Not Supported</string>
+    <string name="title_uwb_permission">UWB Permission Required</string>
+    <string name="title_uwb_ready">UWB Ready</string>
+</resources>

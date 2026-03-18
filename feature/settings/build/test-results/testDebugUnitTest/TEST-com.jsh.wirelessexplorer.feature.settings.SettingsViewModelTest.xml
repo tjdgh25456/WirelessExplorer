@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.jsh.wirelessexplorer.feature.settings.SettingsViewModelTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-03-18T01:39:18.438Z" hostname="JSHui-MacBookPro.local" time="0.822">
+  <properties/>
+  <testcase name="dismissClearHistoryDialog_updatesState" classname="com.jsh.wirelessexplorer.feature.settings.SettingsViewModelTest" time="0.776"/>
+  <testcase name="showClearHistoryDialog_updatesState" classname="com.jsh.wirelessexplorer.feature.settings.SettingsViewModelTest" time="0.004"/>
+  <testcase name="clearAllHistory_deletesAllAndDismissesDialog" classname="com.jsh.wirelessexplorer.feature.settings.SettingsViewModelTest" time="0.037"/>
+  <testcase name="uiState_emitsSettingsFromUseCase" classname="com.jsh.wirelessexplorer.feature.settings.SettingsViewModelTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[SLF4J: No SLF4J providers were found.
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See https://www.slf4j.org/codes.html#noProviders for further details.
+WARNING: A Java agent has been loaded dynamically (/Users/jsh/.gradle/caches/modules-2/files-2.1/net.bytebuddy/byte-buddy-agent/1.12.20/c37341e04a529c7263ff3093ecdceaa4ab39b489/byte-buddy-agent-1.12.20.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+]]></system-err>
+</testsuite>

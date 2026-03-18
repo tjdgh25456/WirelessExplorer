@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_undo">Undo</string>
+    <string name="btn_start_scanning">Start Scanning</string>
+    <string name="cd_add_favorite">Add to favorites</string>
+    <string name="cd_delete">Delete</string>
+    <string name="cd_remove_favorite">Remove from favorites</string>
+    <string name="cd_search">Search</string>
+    <string name="desc_scan_for_history">Scan for nearby wireless devices to build your history</string>
+    <string name="empty_no_devices_found">No devices found</string>
+    <string name="filter_all">All</string>
+    <string name="filter_ble">BLE</string>
+    <string name="filter_nfc">NFC</string>
+    <string name="filter_uwb">UWB</string>
+    <string name="filter_wifi">Wi-Fi</string>
+    <string name="snackbar_deleted_format">%1$s deleted</string>
+    <string name="title_history">History</string>
+</resources>

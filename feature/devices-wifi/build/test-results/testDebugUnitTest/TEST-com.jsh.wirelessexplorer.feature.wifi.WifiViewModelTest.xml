@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.jsh.wirelessexplorer.feature.wifi.WifiViewModelTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-03-18T01:39:17.205Z" hostname="JSHui-MacBookPro.local" time="1.27">
+  <properties/>
+  <testcase name="startScan_whenWifiDisabled_setsError" classname="com.jsh.wirelessexplorer.feature.wifi.WifiViewModelTest" time="1.237"/>
+  <testcase name="startScan_whenWifiEnabled_collectsNetworks" classname="com.jsh.wirelessexplorer.feature.wifi.WifiViewModelTest" time="0.025"/>
+  <testcase name="clearError_clearsErrorState" classname="com.jsh.wirelessexplorer.feature.wifi.WifiViewModelTest" time="0.007"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[SLF4J: No SLF4J providers were found.
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See https://www.slf4j.org/codes.html#noProviders for further details.
+WARNING: A Java agent has been loaded dynamically (/Users/jsh/.gradle/caches/modules-2/files-2.1/net.bytebuddy/byte-buddy-agent/1.12.20/c37341e04a529c7263ff3093ecdceaa4ab39b489/byte-buddy-agent-1.12.20.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+]]></system-err>
+</testsuite>

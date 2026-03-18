@@ -1,0 +1,20 @@
+R_DEF: Internal format may change without notice
+local
+string btn_check_compatibility
+string btn_retry
+string btn_start_ranging
+string btn_stop_ranging
+string desc_searching_uwb
+string desc_uwb_not_supported
+string desc_uwb_permission
+string desc_uwb_ready
+string label_azimuth
+string label_distance
+string label_elevation
+string label_searching
+string label_supported_devices
+string label_uwb
+string title_ranging_error
+string title_uwb_not_supported
+string title_uwb_permission
+string title_uwb_ready

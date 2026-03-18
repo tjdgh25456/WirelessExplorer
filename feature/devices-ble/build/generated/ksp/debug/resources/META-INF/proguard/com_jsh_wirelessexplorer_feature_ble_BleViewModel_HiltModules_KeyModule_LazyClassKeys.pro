@@ -1,0 +1,1 @@
+-keep,allowobfuscation,allowshrinking class com.jsh.wirelessexplorer.feature.ble.BleViewModel

@@ -1,0 +1,2 @@
+-keep,allowobfuscation,allowshrinking class com.jsh.wirelessexplorer.feature.search.SearchViewModel
+-keep,allowobfuscation,allowshrinking class com.jsh.wirelessexplorer.feature.search.SearchViewModel

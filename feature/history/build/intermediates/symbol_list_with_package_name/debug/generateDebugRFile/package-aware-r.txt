@@ -1,0 +1,16 @@
+com.jsh.wirelessexplorer.feature.history
+string action_undo
+string btn_start_scanning
+string cd_add_favorite
+string cd_delete
+string cd_remove_favorite
+string cd_search
+string desc_scan_for_history
+string empty_no_devices_found
+string filter_all
+string filter_ble
+string filter_nfc
+string filter_uwb
+string filter_wifi
+string snackbar_deleted_format
+string title_history

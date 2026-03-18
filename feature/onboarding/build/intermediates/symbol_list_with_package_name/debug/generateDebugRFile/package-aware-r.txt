@@ -1,0 +1,17 @@
+com.jsh.wirelessexplorer.feature.onboarding
+string btn_grant_permissions
+string btn_next
+string btn_skip
+string btn_start_exploring
+string onboarding_allset_subtitle
+string onboarding_allset_title
+string onboarding_permissions_subtitle
+string onboarding_permissions_title
+string onboarding_welcome_subtitle
+string onboarding_welcome_title
+string permission_bluetooth
+string permission_bluetooth_desc
+string permission_notifications
+string permission_notifications_desc
+string permission_wifi
+string permission_wifi_desc
