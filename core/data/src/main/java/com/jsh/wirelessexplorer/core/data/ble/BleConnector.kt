@@ -237,6 +237,7 @@ class BleConnector @Inject constructor(
         }
 
         // 실시간 RSSI 폴링 (연결 유지 시 2초 간격)
+        @SuppressLint("MissingPermission")
         launch {
             while (true) {
                 delay(RSSI_POLL_INTERVAL_MS)

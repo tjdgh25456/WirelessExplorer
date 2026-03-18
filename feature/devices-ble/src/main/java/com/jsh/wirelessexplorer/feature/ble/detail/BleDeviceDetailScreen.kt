@@ -71,17 +71,16 @@ import com.jsh.wirelessexplorer.core.designsystem.theme.OnSurface
 import com.jsh.wirelessexplorer.core.designsystem.theme.OnSurfaceDim
 import com.jsh.wirelessexplorer.core.designsystem.theme.OnSurfaceMedium
 import com.jsh.wirelessexplorer.core.designsystem.theme.Primary
+import com.jsh.wirelessexplorer.core.designsystem.theme.Surface as ThemeSurface
 import com.jsh.wirelessexplorer.core.designsystem.theme.WifiGreen
 import com.jsh.wirelessexplorer.core.model.BleBondState
 import com.jsh.wirelessexplorer.core.model.BleConnectionState
 import com.jsh.wirelessexplorer.core.model.BleDevice
+import com.jsh.wirelessexplorer.core.model.SignalStrength
 import com.jsh.wirelessexplorer.feature.ble.R
 import com.jsh.wirelessexplorer.feature.ble.SignalBars
 import com.jsh.wirelessexplorer.feature.ble.WriteValueDialog
 
-private const val RSSI_EXCELLENT = -50
-private const val RSSI_GOOD = -70
-private const val RSSI_FAIR = -85
 private const val AVATAR_PULSE_DURATION_MS = 2000
 private const val GLASS_CARD_BORDER_ALPHA = 0.1f
 private const val GLASS_CARD_BG_ALPHA = 0.05f
@@ -130,7 +129,7 @@ fun BleDeviceDetailScreen(
             SnackbarHost(hostState = snackbarHostState) { data ->
                 Snackbar(
                     snackbarData = data,
-                    containerColor = com.jsh.wirelessexplorer.core.designsystem.theme.Surface,
+                    containerColor = ThemeSurface,
                     contentColor = OnSurface,
                 )
             }
@@ -577,19 +576,18 @@ private fun ConnectionActionButton(
 // --- Helpers ---
 
 @Composable
-private fun rssiQualityLabel(rssi: Int): String = when {
-    rssi >= RSSI_EXCELLENT -> stringResource(R.string.label_signal_excellent)
-    rssi >= RSSI_GOOD -> stringResource(R.string.label_signal_good)
-    rssi >= RSSI_FAIR -> stringResource(R.string.label_signal_fair)
-    else -> stringResource(R.string.label_signal_weak)
+private fun rssiQualityLabel(rssi: Int): String = when (SignalStrength.from(rssi)) {
+    SignalStrength.EXCELLENT -> stringResource(R.string.label_signal_excellent)
+    SignalStrength.GOOD -> stringResource(R.string.label_signal_good)
+    SignalStrength.FAIR -> stringResource(R.string.label_signal_fair)
+    SignalStrength.POOR -> stringResource(R.string.label_signal_weak)
 }
 
 @Composable
-private fun rssiQualityColor(rssi: Int) = when {
-    rssi >= RSSI_EXCELLENT -> WifiGreen
-    rssi >= RSSI_GOOD -> WifiGreen
-    rssi >= RSSI_FAIR -> NfcAmber
-    else -> Error
+private fun rssiQualityColor(rssi: Int) = when (SignalStrength.from(rssi)) {
+    SignalStrength.EXCELLENT, SignalStrength.GOOD -> WifiGreen
+    SignalStrength.FAIR -> NfcAmber
+    SignalStrength.POOR -> Error
 }
 
 @Composable

@@ -37,13 +37,11 @@ import com.jsh.wirelessexplorer.core.designsystem.theme.OnSurface
 import com.jsh.wirelessexplorer.core.designsystem.theme.OnSurfaceDim
 import com.jsh.wirelessexplorer.core.designsystem.theme.OnSurfaceMedium
 import com.jsh.wirelessexplorer.core.designsystem.theme.Primary
+import com.jsh.wirelessexplorer.core.designsystem.theme.Surface as ThemeSurface
 import com.jsh.wirelessexplorer.core.designsystem.theme.WifiGreen
 import com.jsh.wirelessexplorer.core.model.BleConnectedDevice
+import com.jsh.wirelessexplorer.core.model.SignalStrength
 import com.jsh.wirelessexplorer.feature.dashboard.R
-
-private const val RSSI_EXCELLENT = -50
-private const val RSSI_GOOD = -70
-private const val RSSI_FAIR = -85
 
 @Composable
 fun BleConnectedCard(
@@ -53,7 +51,7 @@ fun BleConnectedCard(
 ) {
     Surface(
         shape = RoundedCornerShape(16.dp),
-        color = com.jsh.wirelessexplorer.core.designsystem.theme.Surface,
+        color = ThemeSurface,
         modifier = modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -146,7 +144,7 @@ private fun BleConnectedDeviceRow(
                 color = WifiGreen,
                 border = BorderStroke(
                     2.dp,
-                    com.jsh.wirelessexplorer.core.designsystem.theme.Surface,
+                    ThemeSurface,
                 ),
             ) {}
         }
@@ -177,11 +175,10 @@ private fun BleConnectedDeviceRow(
             ) {
                 // RSSI 뱃지
                 if (device.rssi != 0) {
-                    val rssiColor = when {
-                        device.rssi >= RSSI_EXCELLENT -> WifiGreen
-                        device.rssi >= RSSI_GOOD -> WifiGreen
-                        device.rssi >= RSSI_FAIR -> NfcAmber
-                        else -> Error
+                    val rssiColor = when (SignalStrength.from(device.rssi)) {
+                        SignalStrength.EXCELLENT, SignalStrength.GOOD -> WifiGreen
+                        SignalStrength.FAIR -> NfcAmber
+                        SignalStrength.POOR -> Error
                     }
                     Surface(
                         shape = RoundedCornerShape(6.dp),
