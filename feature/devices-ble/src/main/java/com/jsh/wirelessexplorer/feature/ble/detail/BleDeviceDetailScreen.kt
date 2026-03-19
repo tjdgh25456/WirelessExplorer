@@ -1,5 +1,6 @@
 package com.jsh.wirelessexplorer.feature.ble.detail
 
+import com.jsh.wirelessexplorer.feature.ble.model.WriteTarget
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -597,8 +598,3 @@ private fun BleBondState.displayLabel(): String = when (this) {
     BleBondState.NONE -> stringResource(R.string.label_not_bonded)
 }
 
-private data class WriteTarget(
-    val serviceUuid: String,
-    val charUuid: String,
-    val charName: String,
-)

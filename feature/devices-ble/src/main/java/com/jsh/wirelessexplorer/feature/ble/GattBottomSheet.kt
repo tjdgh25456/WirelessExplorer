@@ -1,5 +1,6 @@
 package com.jsh.wirelessexplorer.feature.ble
 
+import com.jsh.wirelessexplorer.feature.ble.model.WriteTarget
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -172,8 +173,3 @@ fun GattBottomSheet(
     }
 }
 
-private data class WriteTarget(
-    val serviceUuid: String,
-    val charUuid: String,
-    val charName: String,
-)
