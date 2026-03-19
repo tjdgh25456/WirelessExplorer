@@ -1,2 +1,0 @@
--keep,allowobfuscation,allowshrinking class com.jsh.wirelessexplorer.feature.wifi.WifiViewModel
--keep,allowobfuscation,allowshrinking class com.jsh.wirelessexplorer.feature.wifi.WifiViewModel

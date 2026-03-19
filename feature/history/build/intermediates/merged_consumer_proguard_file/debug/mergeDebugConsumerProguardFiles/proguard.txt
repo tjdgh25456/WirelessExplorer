@@ -1,2 +1,0 @@
--keep,allowobfuscation,allowshrinking class com.jsh.wirelessexplorer.feature.history.HistoryViewModel
--keep,allowobfuscation,allowshrinking class com.jsh.wirelessexplorer.feature.history.HistoryViewModel

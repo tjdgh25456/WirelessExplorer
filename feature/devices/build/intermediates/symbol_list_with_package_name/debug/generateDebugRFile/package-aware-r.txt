@@ -1,5 +1,0 @@
-com.jsh.wirelessexplorer.feature.devices
-string tab_bluetooth
-string tab_nfc
-string tab_uwb
-string tab_wifi

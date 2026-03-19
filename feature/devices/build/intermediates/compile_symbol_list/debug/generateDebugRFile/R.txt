@@ -1,4 +1,0 @@
-int string tab_bluetooth 0x0
-int string tab_nfc 0x0
-int string tab_uwb 0x0
-int string tab_wifi 0x0
