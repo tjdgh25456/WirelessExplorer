@@ -5,7 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.jsh.wirelessexplorer.feature.settings.BuildConfig
 import com.jsh.wirelessexplorer.core.model.AppTheme
 import com.jsh.wirelessexplorer.core.model.SignalUnit
-import com.jsh.wirelessexplorer.core.domain.history.DeviceHistoryRepository
+import com.jsh.wirelessexplorer.core.domain.history.DeleteAllHistoryUseCase
+import com.jsh.wirelessexplorer.core.domain.history.ObserveDeviceHistoryUseCase
 import com.jsh.wirelessexplorer.core.domain.settings.SettingsRepository
 import com.jsh.wirelessexplorer.core.domain.settings.ObserveSettingsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,7 +27,8 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     observeSettings: ObserveSettingsUseCase,
     private val settingsRepository: SettingsRepository,
-    private val historyRepository: DeviceHistoryRepository,
+    private val deleteAllHistory: DeleteAllHistoryUseCase,
+    private val observeDeviceHistory: ObserveDeviceHistoryUseCase,
 ) : ViewModel() {
 
     private val showClearDialog = MutableStateFlow(false)
@@ -99,14 +101,14 @@ class SettingsViewModel @Inject constructor(
 
     /** 전체 기기 이력을 삭제한다. */
     fun clearAllHistory() = viewModelScope.launch {
-        historyRepository.deleteAll()
+        deleteAllHistory()
         showClearDialog.value = false
         Timber.d("전체 기기 이력 삭제 완료")
     }
 
     /** 기기 이력을 JSON 문자열로 직렬화한다. */
     suspend fun exportHistoryAsJson(): String {
-        val devices = historyRepository.observeAll().first()
+        val devices = observeDeviceHistory().first()
         val array = JSONArray()
         devices.forEach { device ->
             array.put(

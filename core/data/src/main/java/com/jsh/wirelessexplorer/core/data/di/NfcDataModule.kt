@@ -4,7 +4,7 @@ import android.content.Context
 import android.nfc.NfcAdapter
 import com.jsh.wirelessexplorer.core.common.IoDispatcher
 import com.jsh.wirelessexplorer.core.data.nfc.NfcReader
-import com.jsh.wirelessexplorer.core.data.nfc.NfcReaderController
+import com.jsh.wirelessexplorer.core.domain.nfc.NfcReaderController
 import com.jsh.wirelessexplorer.core.data.nfc.NfcRepositoryImpl
 import com.jsh.wirelessexplorer.core.domain.nfc.NfcRepository
 import com.jsh.wirelessexplorer.core.domain.nfc.ObserveNfcEnabledUseCase

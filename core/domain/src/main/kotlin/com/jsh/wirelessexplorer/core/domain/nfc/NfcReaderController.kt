@@ -1,4 +1,4 @@
-package com.jsh.wirelessexplorer.core.data.nfc
+package com.jsh.wirelessexplorer.core.domain.nfc
 
 import android.app.Activity
 

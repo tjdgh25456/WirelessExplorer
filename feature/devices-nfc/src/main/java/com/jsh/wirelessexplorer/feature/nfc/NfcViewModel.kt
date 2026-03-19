@@ -3,7 +3,7 @@ package com.jsh.wirelessexplorer.feature.nfc
 import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jsh.wirelessexplorer.core.data.nfc.NfcReaderController
+import com.jsh.wirelessexplorer.core.domain.nfc.NfcReaderController
 import com.jsh.wirelessexplorer.core.model.NfcState
 import com.jsh.wirelessexplorer.core.domain.nfc.NfcRepository
 import com.jsh.wirelessexplorer.core.domain.nfc.ObserveNfcTagUseCase

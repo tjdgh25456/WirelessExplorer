@@ -3,7 +3,7 @@ package com.jsh.wirelessexplorer.core.data.nfc
 import android.app.Activity
 import android.nfc.NfcAdapter
 import com.jsh.wirelessexplorer.core.model.NfcTagData
-import com.jsh.wirelessexplorer.core.data.nfc.NfcReaderController
+import com.jsh.wirelessexplorer.core.domain.nfc.NfcReaderController
 import com.jsh.wirelessexplorer.core.domain.nfc.NfcRepository
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay

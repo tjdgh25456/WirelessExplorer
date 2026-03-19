@@ -3,7 +3,7 @@ package com.jsh.wirelessexplorer.feature.wifi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jsh.wirelessexplorer.core.domain.dashboard.ObserveTrafficSpeedUseCase
-import com.jsh.wirelessexplorer.core.domain.wifi.WifiRepository
+import com.jsh.wirelessexplorer.core.domain.wifi.GetWifiEnabledUseCase
 import com.jsh.wirelessexplorer.core.domain.wifi.ObserveWifiConnectionUseCase
 import com.jsh.wirelessexplorer.core.domain.wifi.ScanWifiNetworksUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,7 +28,7 @@ class WifiViewModel @Inject constructor(
     private val scanWifiNetworks: ScanWifiNetworksUseCase,
     private val observeWifiConnection: ObserveWifiConnectionUseCase,
     private val observeTrafficSpeed: ObserveTrafficSpeedUseCase,
-    private val wifiRepository: WifiRepository,
+    private val getWifiEnabled: GetWifiEnabledUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WifiUiState())
@@ -44,7 +44,7 @@ class WifiViewModel @Inject constructor(
     }
 
     fun startScan() {
-        if (!wifiRepository.isWifiEnabled()) {
+        if (!getWifiEnabled()) {
             _uiState.update { it.copy(error = "WIFI_DISABLED") }
             return
         }
