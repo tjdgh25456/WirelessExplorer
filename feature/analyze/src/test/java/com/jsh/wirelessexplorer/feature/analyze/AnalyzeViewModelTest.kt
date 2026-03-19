@@ -9,22 +9,16 @@ import com.jsh.wirelessexplorer.core.model.AnalyzePeriod
 import com.jsh.wirelessexplorer.core.model.TechDistribution
 import com.jsh.wirelessexplorer.core.model.TechType
 import com.jsh.wirelessexplorer.core.model.TopDevice
+import com.jsh.wirelessexplorer.core.testing.MainDispatcherRule
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TestWatcher
-import org.junit.runner.Description
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AnalyzeViewModelTest {
@@ -67,17 +61,5 @@ class AnalyzeViewModelTest {
             assertEquals(AnalyzePeriod.ALL_TIME, state.selectedPeriod)
             assertFalse(state.isLoading)
         }
-    }
-}
-
-@OptIn(ExperimentalCoroutinesApi::class)
-class MainDispatcherRule(
-    private val dispatcher: TestDispatcher = UnconfinedTestDispatcher(),
-) : TestWatcher() {
-    override fun starting(description: Description) {
-        Dispatchers.setMain(dispatcher)
-    }
-    override fun finished(description: Description) {
-        Dispatchers.resetMain()
     }
 }

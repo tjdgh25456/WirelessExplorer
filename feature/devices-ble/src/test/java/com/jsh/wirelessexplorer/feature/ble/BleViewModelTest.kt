@@ -7,21 +7,15 @@ import com.jsh.wirelessexplorer.core.domain.ble.ObserveGattCharacteristicUseCase
 import com.jsh.wirelessexplorer.core.domain.ble.ReadGattCharacteristicUseCase
 import com.jsh.wirelessexplorer.core.domain.ble.ScanBleDevicesUseCase
 import com.jsh.wirelessexplorer.core.domain.ble.WriteGattCharacteristicUseCase
+import com.jsh.wirelessexplorer.core.testing.MainDispatcherRule
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TestWatcher
-import org.junit.runner.Description
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BleViewModelTest {
@@ -77,16 +71,5 @@ class BleViewModelTest {
             val state = awaitItem()
             assertEquals(false, state.isScanning)
         }
-    }
-}
-
-class MainDispatcherRule(
-    private val dispatcher: TestDispatcher = UnconfinedTestDispatcher(),
-) : TestWatcher() {
-    override fun starting(description: Description) {
-        Dispatchers.setMain(dispatcher)
-    }
-    override fun finished(description: Description) {
-        Dispatchers.resetMain()
     }
 }

@@ -9,6 +9,7 @@ android {
 dependencies {
     implementation(projects.core.data)
 
+    testImplementation(projects.core.testing)
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.turbine)

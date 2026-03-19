@@ -7,24 +7,18 @@ import com.jsh.wirelessexplorer.core.domain.settings.SettingsRepository
 import com.jsh.wirelessexplorer.core.model.DeviceHistory
 import com.jsh.wirelessexplorer.core.model.TechType
 import com.jsh.wirelessexplorer.core.model.UserSettings
-import io.mockk.coEvery
+import com.jsh.wirelessexplorer.core.testing.MainDispatcherRule
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TestWatcher
-import org.junit.runner.Description
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest {
@@ -101,17 +95,4 @@ class SettingsViewModelTest {
 
     // exportHistoryAsJson uses org.json.JSONObject (Android framework)
     // → instrumented test에서 검증
-}
-
-@OptIn(ExperimentalCoroutinesApi::class)
-class MainDispatcherRule(
-    private val dispatcher: kotlinx.coroutines.test.TestDispatcher = UnconfinedTestDispatcher(),
-) : TestWatcher() {
-    override fun starting(description: Description) {
-        Dispatchers.setMain(dispatcher)
-    }
-
-    override fun finished(description: Description) {
-        Dispatchers.resetMain()
-    }
 }

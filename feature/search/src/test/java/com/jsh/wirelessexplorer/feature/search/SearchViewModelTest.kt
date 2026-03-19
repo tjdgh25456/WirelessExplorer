@@ -5,27 +5,19 @@ import com.jsh.wirelessexplorer.core.domain.search.ClearRecentSearchesUseCase
 import com.jsh.wirelessexplorer.core.domain.search.DeleteRecentSearchUseCase
 import com.jsh.wirelessexplorer.core.domain.search.ObserveRecentSearchesUseCase
 import com.jsh.wirelessexplorer.core.domain.search.SaveRecentSearchUseCase
+import com.jsh.wirelessexplorer.core.testing.MainDispatcherRule
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TestWatcher
-import org.junit.runner.Description
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SearchViewModelTest {
@@ -90,17 +82,5 @@ class SearchViewModelTest {
         advanceUntilIdle()
 
         coVerify { saveRecentSearch.invoke("Pixel") }
-    }
-}
-
-@OptIn(ExperimentalCoroutinesApi::class)
-class MainDispatcherRule(
-    private val dispatcher: TestDispatcher = UnconfinedTestDispatcher(),
-) : TestWatcher() {
-    override fun starting(description: Description) {
-        Dispatchers.setMain(dispatcher)
-    }
-    override fun finished(description: Description) {
-        Dispatchers.resetMain()
     }
 }

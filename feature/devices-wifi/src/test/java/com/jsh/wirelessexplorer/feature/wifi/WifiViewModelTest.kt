@@ -8,25 +8,19 @@ import com.jsh.wirelessexplorer.core.domain.wifi.WifiRepository
 import com.jsh.wirelessexplorer.core.model.TrafficSpeed
 import com.jsh.wirelessexplorer.core.model.WifiConnectionInfo
 import com.jsh.wirelessexplorer.core.model.WifiNetwork
+import com.jsh.wirelessexplorer.core.testing.MainDispatcherRule
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.TestDispatcher
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TestWatcher
-import org.junit.runner.Description
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class WifiViewModelTest {
@@ -94,16 +88,5 @@ class WifiViewModelTest {
             val state = awaitItem()
             assertEquals(1, state.networks.size)
         }
-    }
-}
-
-class MainDispatcherRule(
-    private val dispatcher: TestDispatcher = UnconfinedTestDispatcher(),
-) : TestWatcher() {
-    override fun starting(description: Description) {
-        Dispatchers.setMain(dispatcher)
-    }
-    override fun finished(description: Description) {
-        Dispatchers.resetMain()
     }
 }
