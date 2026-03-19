@@ -75,7 +75,7 @@ abstract class BleDataModule {
 
         @Provides
         @Singleton
-        fun provideBluetoothAdapter(@ApplicationContext context: Context): BluetoothAdapter {
+        fun provideBluetoothAdapter(@ApplicationContext context: Context): BluetoothAdapter? {
             val manager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
             return manager.adapter
         }

@@ -32,6 +32,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -58,8 +59,9 @@ class BleConnector @Inject constructor(
     private val activeQueue = AtomicReference<Channel<GattOperation>?>(null)
 
     // GATT 수명 관리용 CoroutineScope (큐 프로세서, RSSI 폴링)
+    @Volatile
     private var connectionScope: CoroutineScope? = null
-    private var retryCount = 0
+    private val retryCount = AtomicInteger(0)
 
     // GATT 연결 상태 (ViewModel 수명과 무관하게 유지)
     private val _connectionState = MutableStateFlow<BleConnectionState>(BleConnectionState.Idle)
@@ -85,9 +87,9 @@ class BleConnector @Inject constructor(
         @SuppressLint("MissingPermission")
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
             when {
-                status == GATT_ERROR_133 && retryCount < MAX_RETRY_COUNT -> {
-                    retryCount++
-                    Timber.d("GATT error 133 발생, 재시도 ($retryCount/$MAX_RETRY_COUNT)")
+                status == GATT_ERROR_133 && retryCount.get() < MAX_RETRY_COUNT -> {
+                    val attempt = retryCount.incrementAndGet()
+                    Timber.d("GATT error 133 발생, 재시도 ($attempt/$MAX_RETRY_COUNT)")
                     gatt.close()
                     gattRef = gatt.device.let { device ->
                         device.connectGatt(context, false, this, BluetoothDevice.TRANSPORT_LE)
@@ -96,7 +98,7 @@ class BleConnector @Inject constructor(
 
                 newState == BluetoothProfile.STATE_CONNECTED && status == BluetoothGatt.GATT_SUCCESS -> {
                     Timber.d("GATT 연결 성공: ${gatt.device.address}")
-                    retryCount = 0
+                    retryCount.set(0)
                     trackDeviceConnected(gatt.device)
                     _connectionState.value = BleConnectionState.DiscoveringServices
                     gatt.discoverServices()
@@ -242,7 +244,7 @@ class BleConnector @Inject constructor(
             return connectionState
         }
 
-        retryCount = 0
+        retryCount.set(0)
         _connectionState.value = BleConnectionState.Connecting
 
         // 이전 연결 리소스 정리
@@ -295,7 +297,9 @@ class BleConnector @Inject constructor(
                 ?: return@withContext Result.failure(Exception("Characteristic not found"))
 
             val deferred = CompletableDeferred<Result<ByteArray>>()
-            pendingRead.set(deferred)
+            if (!pendingRead.compareAndSet(null, deferred)) {
+                return@withContext Result.failure(Exception("Read already in progress"))
+            }
 
             try {
                 activeQueue.get()?.trySend(GattOperation { gatt.readCharacteristic(characteristic) })
@@ -324,7 +328,9 @@ class BleConnector @Inject constructor(
             ?: return@withContext Result.failure(Exception("Characteristic not found"))
 
         val deferred = CompletableDeferred<Result<Unit>>()
-        pendingWrite.set(deferred)
+        if (!pendingWrite.compareAndSet(null, deferred)) {
+            return@withContext Result.failure(Exception("Write already in progress"))
+        }
 
         try {
             activeQueue.get()?.trySend(
@@ -364,7 +370,9 @@ class BleConnector @Inject constructor(
             ?: return@withContext Result.failure(Exception("CCC descriptor not found"))
 
         val deferred = CompletableDeferred<Result<Unit>>()
-        pendingDescriptorWrite.set(deferred)
+        if (!pendingDescriptorWrite.compareAndSet(null, deferred)) {
+            return@withContext Result.failure(Exception("Descriptor write already in progress"))
+        }
 
         val descriptorValue = if (enable) {
             BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
