@@ -1,6 +1,6 @@
 # Wireless Explorer
 
-> Android 무선 프로토콜 통합 탐색 도구 — BLE, Wi-Fi, NFC, UWB를 하나의 인터페이스로.
+A multi-protocol wireless explorer for Android — BLE, Wi-Fi, NFC, and UWB in a single, modular app.
 
 <p align="center">
   <img src="app/src/main/res/drawable/ic_app_icon_stitch.jpg" width="120" alt="Wireless Explorer" />
@@ -13,44 +13,55 @@
   <img src="https://img.shields.io/badge/targetSdk-36-34A853" />
   <img src="https://img.shields.io/badge/Architecture-Clean-FF6F00" />
 </p>
+<p align="center">
+  <img src="https://img.shields.io/badge/Modules-23-blue" />
+  <img src="https://img.shields.io/badge/Convention_Plugins-8-blue" />
+  <img src="https://img.shields.io/badge/License-Apache_2.0-green" />
+</p>
 
----
+## Screenshots
 
-## Overview
+<table>
+  <tr>
+    <td align="center"><b>Dashboard</b></td>
+    <td align="center"><b>BLE Scanner</b></td>
+    <td align="center"><b>GATT Explorer</b></td>
+    <td align="center"><b>Wi-Fi Analyzer</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/dashboard.png" width="200" alt="Dashboard" /></td>
+    <td><img src="docs/screenshots/ble_scanner.png" width="200" alt="BLE Scanner" /></td>
+    <td><img src="docs/screenshots/gatt_explorer.png" width="200" alt="GATT Explorer" /></td>
+    <td><img src="docs/screenshots/wifi_analyzer.png" width="200" alt="Wi-Fi Analyzer" /></td>
+  </tr>
+</table>
 
-Wireless Explorer는 Android 디바이스 주변의 무선 환경을 실시간으로 탐색하고 분석하는 네이티브 앱입니다.
+## Motivation
 
-BLE 디바이스 스캔 및 GATT 서비스 탐색, Wi-Fi 네트워크 분석(Wi-Fi 7 포함), NFC 태그 읽기, UWB 거리 측정까지 — 4가지 무선 프로토콜을 단일 앱에서 통합 관리합니다.
+Working on production BLE firmware (continuous glucose monitors) taught me that Android's wireless APIs are deceptively hard to get right. GATT operations silently fail if you don't serialize them. Error 133 shows up without explanation. Scan callbacks flood the main thread if you emit every result.
 
-### Key Features
+Most sample code ignores these problems. This project doesn't.
 
-| Feature | Description |
-|---------|-------------|
-| **BLE Scanner** | BLE 디바이스 스캔, GATT 서비스/Characteristic 탐색, 실시간 RSSI 모니터링 |
-| **Wi-Fi Analyzer** | 주변 네트워크 스캔, 채널/대역폭/보안 분석, Wi-Fi 7 (802.11be) 지원 |
-| **NFC Reader** | NFC 태그 감지 및 NDEF 레코드 파싱, 태그 메타데이터 표시 |
-| **UWB Ranging** | Ultra-Wideband 기반 거리/각도 측정 (AndroidX UWB) |
-| **Dashboard** | 연결 상태 요약, 빠른 액션, 실시간 트래픽 통계 |
-| **Device History** | 탐색 이력 저장, 검색, CSV 내보내기 |
-| **Analytics** | 기술별 사용 통계 시각화 (도넛 차트, Top 5 디바이스) |
+Wireless Explorer is a ground-up implementation of **production-grade** BLE resource management — serialized GATT queues, automatic error recovery, batched scan emission — alongside Wi-Fi, NFC, and UWB support in a single app. It demonstrates how to handle multiple wireless protocols cleanly within a modular Clean Architecture.
+
+**What this project proves:**
+- Thread-safe GATT operation queue with timeout and cancellation
+- Automatic GATT error 133 retry with connection re-establishment
+- Batched scan emission that won't drop frames or overload the UI
+- Multi-protocol architecture that scales without coupling
 
 ---
 
 ## Architecture
 
-Clean Architecture + Unidirectional Data Flow 기반으로 설계했습니다.
-
 ```
-┌──────────────────────────────────────────────────────┐
-│  Presentation                                        │
-│  Compose UI → ViewModel (StateFlow + UiState)        │
-├──────────────────────────────────────────────────────┤
-│  Domain                                              │
-│  UseCase (operator invoke) → Repository Interface    │
-├──────────────────────────────────────────────────────┤
-│  Data                                                │
-│  RepositoryImpl → DataSource → Room / DataStore      │
-└──────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│  Presentation — Compose UI → ViewModel (StateFlow)       │
+├──────────────────────────────────────────────────────────┤
+│  Domain — UseCase (operator invoke) → Repository IF      │
+├──────────────────────────────────────────────────────────┤
+│  Data — RepositoryImpl → DataSource → Room / DataStore   │
+└──────────────────────────────────────────────────────────┘
 ```
 
 ### Module Dependency Graph
@@ -81,63 +92,151 @@ Clean Architecture + Unidirectional Data Flow 기반으로 설계했습니다.
              └────────────────────────────┘
 ```
 
-### Module Overview
+### Architecture Highlights
 
-23개 모듈 (1 app + 10 core + 12 feature):
+- **Serialized GATT operation queue** — `Channel<GattOperation>` processes one BLE operation at a time. Each caller gets a `CompletableDeferred` result; `AtomicReference` guarantees thread-safe handoff between the GATT callback thread and coroutines.
+
+- **StateFlow-based connection lifecycle** — `BleConnectionState` is a sealed interface with 7 states (`Idle → Connecting → DiscoveringServices → Connected → …`). Connection state lives in `BleConnector`, decoupled from ViewModel lifecycle.
+
+- **GATT error 133 auto-retry** — The infamous status 133 triggers automatic reconnection: close the dead GATT, re-create via `connectGatt()`, up to 3 attempts. Retry count resets on success.
+
+- **Batched scan emission** — Scan callbacks write to a `ConcurrentHashMap`; an `AtomicBoolean` dirty flag gates a 500ms periodic emission loop. No per-callback `trySend`, no dropped frames.
+
+- **Convention plugins** — 8 Gradle plugins (`build-logic/convention/`) eliminate boilerplate across 23 modules: Application, Library, Compose, Hilt, Room, JVM, Feature, Serialization.
+
+- **Pure JVM domain** — `core:model` and `core:domain` have zero Android dependencies. Business logic runs as plain JVM unit tests with sub-second feedback.
+
+---
+
+## Code Highlights
+
+### Serialized GATT Read — Queue + Timeout
+
+Every GATT operation goes through a single `Channel`, ensuring only one operation is in-flight at a time. A `CompletableDeferred` bridges the async GATT callback back to the caller with a 5-second timeout.
+
+```kotlin
+// core/data/.../ble/BleConnector.kt
+
+suspend fun readCharacteristic(serviceUuid: String, charUuid: String): Result<ByteArray> =
+    withContext(ioDispatcher) {
+        val gatt = gattRef ?: return@withContext Result.failure(Exception("Not connected"))
+        val characteristic = findCharacteristic(gatt, serviceUuid, charUuid)
+            ?: return@withContext Result.failure(Exception("Characteristic not found"))
+
+        val deferred = CompletableDeferred<Result<ByteArray>>()
+        pendingRead.set(deferred)
+
+        try {
+            activeQueue.get()?.trySend(GattOperation { gatt.readCharacteristic(characteristic) })
+        } catch (e: ClosedSendChannelException) {
+            pendingRead.compareAndSet(deferred, null)
+            return@withContext Result.failure(Exception("Operation queue closed"))
+        }
+
+        withTimeoutOrNull(OP_TIMEOUT_MS) { deferred.await() }
+            ?: Result.failure<ByteArray>(Exception("Read operation timed out")).also {
+                pendingRead.compareAndSet(deferred, null)
+            }
+    }
+```
+
+### Connection State Machine + Error 133 Retry
+
+GATT error 133 is Android's catch-all failure code. Instead of surfacing it to the user, we close the broken GATT object and re-create the connection transparently.
+
+```kotlin
+// core/data/.../ble/BleConnector.kt — gattCallback
+
+override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+    when {
+        status == GATT_ERROR_133 && retryCount < MAX_RETRY_COUNT -> {
+            retryCount++
+            gatt.close()
+            gattRef = gatt.device.connectGatt(context, false, this, BluetoothDevice.TRANSPORT_LE)
+        }
+        newState == BluetoothProfile.STATE_CONNECTED && status == BluetoothGatt.GATT_SUCCESS -> {
+            retryCount = 0
+            trackDeviceConnected(gatt.device)
+            _connectionState.value = BleConnectionState.DiscoveringServices
+            gatt.discoverServices()
+        }
+        newState == BluetoothProfile.STATE_DISCONNECTED -> {
+            trackDeviceDisconnected(gatt.device.address)
+            _connectionState.value = if (status != BluetoothGatt.GATT_SUCCESS)
+                BleConnectionState.Error("Disconnected with error", status)
+            else BleConnectionState.Idle
+            cleanupPendingOperations()
+        }
+    }
+}
+```
+
+### Batched Scan Emission
+
+Scan callbacks fire rapidly. Instead of emitting every result, we accumulate into a `ConcurrentHashMap` and drain on a fixed interval — keeping the UI responsive without dropping data.
+
+```kotlin
+// core/data/.../ble/BleScanner.kt
+
+fun scanDevices(): Flow<List<BleDevice>> = callbackFlow {
+    val discoveredDevices = ConcurrentHashMap<String, ScanResult>()
+    val isDirty = AtomicBoolean(false)
+
+    val scanCallback = object : ScanCallback() {
+        override fun onScanResult(callbackType: Int, result: ScanResult) {
+            discoveredDevices[result.device.address] = result
+            isDirty.set(true)
+        }
+    }
+
+    launch {
+        while (true) {
+            delay(EMIT_INTERVAL_MS)  // 500ms
+            if (isDirty.compareAndSet(true, false)) {
+                val sorted = discoveredDevices.values
+                    .sortedByDescending { it.rssi }
+                    .map { it.toBleDevice(timeProvider.now()) }
+                trySend(sorted)
+            }
+        }
+    }
+
+    scanner.startScan(null, settings, scanCallback)
+    awaitClose { scanner.stopScan(scanCallback) }
+}
+```
+
+---
+
+## Module Overview
+
+23 modules (1 app + 10 core + 12 feature):
 
 | Module | Responsibility |
 |--------|---------------|
-| `app` | Composition Root, Hilt entry point, Navigation host |
-| `core:common` | Shared qualifiers (`@IoDispatcher`), `TimeProvider` |
-| `core:model` | Pure domain models — JVM 모듈, Android 의존성 없음 |
-| `core:domain` | Repository Interface + UseCase Interface/Impl — JVM 모듈 |
-| `core:data` | Repository Impl, DataSource 구현 |
-| `core:database` | Room DB, DAO, Entity, 마이그레이션 |
-| `core:datastore` | DataStore preferences 관리 |
-| `core:designsystem` | Theme, Color, Typography, 공유 디자인 토큰 |
-| `core:ui` | 재사용 Compose 컴포넌트 (SignalBars, PermissionHandler 등) |
-| `core:navigation` | Route 정의, TopLevelDestination |
-| `core:testing` | 테스트 유틸리티, Fake 구현체 |
-| `feature:dashboard` | 연결 상태 대시보드 |
-| `feature:devices` | 탭 컨테이너 (BLE/Wi-Fi/NFC/UWB) |
-| `feature:devices-ble` | BLE 스캔 + GATT 서비스 탐색 |
-| `feature:devices-wifi` | Wi-Fi 네트워크 분석 |
-| `feature:devices-nfc` | NFC 태그 리더 |
-| `feature:devices-uwb` | UWB 거리/각도 측정 |
-| `feature:detail` | 디바이스 상세 화면 |
-| `feature:history` | 탐색 이력 관리 |
-| `feature:search` | 통합 검색 |
-| `feature:analyze` | 사용 통계 분석 |
-| `feature:settings` | 앱 설정 |
-| `feature:onboarding` | 권한 온보딩 플로우 |
-
-### Design Decisions
-
-- **UseCase Interface 분리** — 모든 UseCase는 Interface + Impl로 분리하여 테스트 용이성 확보
-- **`operator fun invoke()`** — UseCase를 함수처럼 호출 (`getDeviceHistory(params)`)
-- **`kotlin.Result<T>`** — 에러 핸들링 표준화, 커스텀 Result 클래스 없이 Kotlin 표준 사용
-- **`callbackFlow` 기반 스캐너** — BLE/Wi-Fi 시스템 콜백을 Flow로 래핑, `awaitClose`에서 리소스 해제 보장
-- **DataStore only** — SharedPreferences 사용 없이 DataStore로 통일
-- **NIA 기반 모듈화** — Now in Android 구조 참고. `core:model`은 순수 JVM으로 분리하여 빌드 속도 최적화, `core:domain`은 단일 모듈로 통합하여 UseCase 간 참조 단순화
-- **Convention Plugins** — `build-logic/convention`에 8개 플러그인으로 빌드 설정 중앙 관리 (Application, Library, Compose, Hilt, Room, JVM, Feature, Serialization)
-
-### Wireless Protocol Handling
-
-```kotlin
-// BLE 스캔 — callbackFlow로 시스템 콜백 래핑
-fun scan(): Flow<List<BleDevice>> = callbackFlow {
-    val callback = object : ScanCallback() {
-        override fun onBatchScanResults(results: List<ScanResult>) {
-            trySend(results.map { it.toDomain() })
-        }
-    }
-    scanner.startScan(callback)
-    awaitClose {
-        scanner.stopScan(callback)
-        // BLE 리소스 누수 방지
-    }
-}.flowOn(Dispatchers.IO)
-```
+| `app` | Composition root, Hilt entry point |
+| `core:common` | Shared qualifiers, `TimeProvider` |
+| `core:model` | Pure domain models (JVM, no Android deps) |
+| `core:domain` | Repository + UseCase interfaces/impls (JVM) |
+| `core:data` | Repository impls, data sources |
+| `core:database` | Room DB, DAOs, entities, migrations |
+| `core:datastore` | DataStore preferences |
+| `core:designsystem` | Theme, color tokens, typography |
+| `core:ui` | Shared Compose components |
+| `core:navigation` | Route definitions, destinations |
+| `core:testing` | Test utilities, fakes |
+| `feature:dashboard` | Connection status overview |
+| `feature:devices` | Tab container (BLE/Wi-Fi/NFC/UWB) |
+| `feature:devices-ble` | BLE scan + GATT explorer |
+| `feature:devices-wifi` | Wi-Fi network analyzer |
+| `feature:devices-nfc` | NFC tag reader |
+| `feature:devices-uwb` | UWB ranging |
+| `feature:detail` | Device detail view |
+| `feature:history` | Scan history management |
+| `feature:search` | Unified search |
+| `feature:analyze` | Usage analytics |
+| `feature:settings` | App settings |
+| `feature:onboarding` | Permission onboarding flow |
 
 ---
 
@@ -149,50 +248,14 @@ fun scan(): Flow<List<BleDevice>> = callbackFlow {
 | UI | Jetpack Compose (BOM 2025.10.00), Material 3 |
 | Architecture | Clean Architecture, Hilt 2.57.1, StateFlow |
 | Async | Kotlin Coroutines 1.10.2, Flow |
-| Navigation | Compose Navigation 2.9.5 (Type-safe routes) |
+| Navigation | Compose Navigation 2.9.5 (type-safe routes) |
 | Persistence | Room 2.8.2, DataStore 1.1.7 |
-| Chart | Vico 2.4.1, Canvas (Donut chart) |
+| Chart | Vico 2.4.1, Canvas (donut chart) |
 | Animation | Lottie Compose 6.7.1 |
-| Build | Gradle Kotlin DSL, AGP 8.13.0, KSP 2.2.20, Convention Plugins (8개) |
-| Modules | 23 modules (1 app + 10 core + 12 feature) |
-| Quality | Detekt 1.23.8, Kover (70%+ coverage) |
+| Build | Gradle Kotlin DSL, AGP 8.13.0, KSP 2.2.20, 8 Convention Plugins |
+| Quality | Detekt 1.23.8, Kover (70%+ coverage target) |
 | Test | JUnit 4, MockK 1.13.4, Turbine 1.2.0 |
 | Debug | Timber 5.0.1, LeakCanary 2.14 |
-
----
-
-## Project Structure
-
-```
-WirelessExplorer/
-├── app/                          # Composition Root + Navigation Host
-├── build-logic/convention/       # 8 Convention Plugins
-├── core/
-│   ├── common/                   # Shared qualifiers, TimeProvider
-│   ├── model/                    # Pure domain models (JVM)
-│   ├── domain/                   # Repository IF + UseCase IF/Impl (JVM)
-│   ├── data/                     # Repository Impl + DataSource
-│   ├── database/                 # Room DB, DAO, Entity
-│   ├── datastore/                # DataStore preferences
-│   ├── designsystem/             # Theme, Color, Typography
-│   ├── ui/                       # Shared Compose components
-│   ├── navigation/               # Routes, TopLevelDestination
-│   └── testing/                  # Test utilities, fakes
-├── feature/
-│   ├── dashboard/                # Connection status overview
-│   ├── devices/                  # Tab container (BLE/WiFi/NFC/UWB)
-│   ├── devices-ble/              # BLE scan + GATT explorer
-│   ├── devices-wifi/             # WiFi network analyzer
-│   ├── devices-nfc/              # NFC tag reader
-│   ├── devices-uwb/              # UWB ranging
-│   ├── detail/                   # Device detail view
-│   ├── history/                  # Scan history
-│   ├── search/                   # Unified search
-│   ├── analyze/                  # Usage analytics
-│   ├── settings/                 # App settings
-│   └── onboarding/               # Permission onboarding
-└── gradle/libs.versions.toml     # Version catalog
-```
 
 ---
 
@@ -200,46 +263,42 @@ WirelessExplorer/
 
 ### Requirements
 
-- Android Studio Ladybug 이상
+- Android Studio Ladybug or later
 - JDK 21
-- Android 13 (API 33)+ 실기기 권장 (BLE/NFC/UWB는 에뮬레이터 미지원)
+- Physical device with Android 13+ (BLE/NFC/UWB require real hardware)
 
 ### Build & Run
 
 ```bash
-# Clone
-git clone https://github.com/jsh-me/WirelessExplorer.git
+git clone https://github.com/tjdgh25456/WirelessExplorer.git
 cd WirelessExplorer
 
-# Build
 ./gradlew assembleDebug
 
-# Test
 ./gradlew testDebugUnitTest
 
-# Coverage Report
+# Coverage report
 ./gradlew koverHtmlReportDebug
 ```
 
-### Required Permissions
+### Permissions
 
 | Permission | Purpose |
 |------------|---------|
-| `BLUETOOTH_SCAN` | BLE 디바이스 스캔 |
-| `BLUETOOTH_CONNECT` | BLE GATT 연결 |
-| `NEARBY_WIFI_DEVICES` | Wi-Fi 네트워크 스캔 |
-| `NFC` | NFC 태그 읽기 |
-| `UWB_RANGING` | UWB 거리 측정 |
-| `POST_NOTIFICATIONS` | Foreground Service 알림 |
+| `BLUETOOTH_SCAN` | BLE device discovery |
+| `BLUETOOTH_CONNECT` | GATT connection |
+| `NEARBY_WIFI_DEVICES` | Wi-Fi network scan |
+| `NFC` | NFC tag reading |
+| `UWB_RANGING` | UWB distance measurement |
+| `POST_NOTIFICATIONS` | Foreground service notification |
 
-> minSdk 33 타겟이므로 `ACCESS_FINE_LOCATION` 없이 BLE/Wi-Fi 스캔이 가능합니다.
-> 일부 OEM 기기 호환성을 위해 선언은 유지합니다.
+> **Note:** With `minSdk 33`, BLE and Wi-Fi scanning work without `ACCESS_FINE_LOCATION`.
 
 ---
 
 ## Design
 
-Dark theme 기반, 각 무선 기술별 컬러 코딩으로 직관적인 구분을 제공합니다.
+Dark theme with per-protocol color coding:
 
 | Protocol | Color | Hex |
 |----------|-------|-----|
@@ -248,14 +307,14 @@ Dark theme 기반, 각 무선 기술별 컬러 코딩으로 직관적인 구분�
 | NFC | Amber | `#F59E0B` |
 | UWB | Violet | `#8B5CF6` |
 
-Primary accent: `#330DF2` (Indigo/Violet)
+Primary accent: `#330DF2`
 
 ---
 
 ## License
 
 ```
-Copyright 2026 Sungho Jung
+Copyright 2026 Seongho Jung
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -269,3 +328,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ```
+
+## Author
+
+**Seongho Jung** — Android Platform Engineer
+
+[![GitHub](https://img.shields.io/badge/GitHub-tjdgh25456-181717?logo=github)](https://github.com/tjdgh25456)
