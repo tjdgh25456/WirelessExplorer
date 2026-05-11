@@ -1,0 +1,108 @@
+<resources>
+    <!-- BLE -->
+    <string name="title_bluetooth_scanner">Bluetooth Scanner</string>
+    <string name="label_devices_found_scanning">%1$d devices found</string>
+    <string name="label_devices_count">%1$d devices</string>
+    <string name="label_tap_scan_hint">Tap scan to discover nearby devices</string>
+    <string name="btn_start_scan">Start Scan</string>
+    <string name="btn_stop_scan">Stop Scan</string>
+    <string name="empty_no_devices">No devices found</string>
+    <string name="label_bonded">Bonded</string>
+    <string name="btn_connect">Connect</string>
+    <string name="hint_filter_devices">Filter by name or address</string>
+    <string name="label_tx_power_format">Tx Power: %1$d dBm</string>
+    <string name="label_service_count_format">Services: %1$d</string>
+    <string name="label_mfr_data">Manufacturer Data</string>
+    <string name="label_unknown_device">Unknown</string>
+    <string name="label_gatt_services_format">GATT SERVICES (%1$d)</string>
+    <string name="btn_disconnect">Disconnect</string>
+    <string name="label_characteristics_format">%1$d characteristics</string>
+    <string name="cd_collapse">Collapse</string>
+    <string name="cd_expand">Expand</string>
+    <string name="label_hex_format">HEX: %1$s</string>
+    <string name="label_utf8_format">UTF-8: %1$s</string>
+    <string name="cd_read">Read</string>
+    <string name="cd_write">Write</string>
+    <string name="cd_subscribe">Subscribe</string>
+    <string name="title_write_value">Write Value</string>
+    <string name="label_hex">HEX</string>
+    <string name="label_text">Text</string>
+    <string name="hint_hex_input">e.g. 0A FF 3B</string>
+    <string name="hint_text_input">Text value</string>
+    <string name="error_invalid_hex">Invalid HEX format</string>
+    <string name="error_input_empty">Input is empty</string>
+    <string name="btn_write">Write</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="title_bluetooth_disabled">Bluetooth Disabled</string>
+    <string name="desc_bluetooth_disabled">Bluetooth is turned off. Please enable Bluetooth in Settings to scan for devices.</string>
+    <string name="btn_ok">OK</string>
+    <string name="title_ble_permission">Bluetooth Permission Required</string>
+    <string name="desc_ble_permission">Bluetooth permissions are needed to scan for and connect to nearby BLE devices.</string>
+    <string name="title_location_disabled">Location Service Required</string>
+    <string name="desc_location_disabled">Android requires Location Services to be enabled for BLE and Wi-Fi scanning.\n\nPlease turn on Location Services to discover nearby devices.</string>
+    <string name="btn_enable_location">Enable Location Services</string>
+
+    <!-- BLE Device Detail -->
+    <string name="cd_navigate_back">Back</string>
+    <string name="error_device_not_found">Device not found. Return to scan list.</string>
+    <string name="label_connecting">Connecting…</string>
+    <string name="label_status_connected">Connected</string>
+    <string name="label_status_disconnected">Disconnected</string>
+    <string name="label_status_error">Error</string>
+    <string name="label_detail_signal">Signal</string>
+    <string name="label_detail_type">Type</string>
+    <string name="label_detail_bond">Bond State</string>
+
+    <!-- Advertising Data Section -->
+    <string name="section_advertising_data">Advertising Data</string>
+    <string name="label_adv_flags">Flags</string>
+    <string name="label_adv_local_name">Local Name</string>
+    <string name="label_adv_phy">PHY (Primary / Secondary)</string>
+    <string name="label_adv_sid">Advertising Set ID</string>
+    <string name="label_adv_data_status">Data Status</string>
+    <string name="label_adv_tx_power">Tx Power</string>
+    <string name="label_adv_service_uuids">Service UUIDs (%1$d)</string>
+    <string name="label_adv_service_data">Service Data</string>
+    <string name="label_adv_manufacturer_data">Manufacturer Data</string>
+    <string name="label_adv_raw_data">Raw Advertisement (%1$d bytes) ▸</string>
+
+    <!-- Help Tooltips -->
+    <string name="help_adv_flags">BLE 광고 Flags는 디바이스의 검색 가능 모드와 BR/EDR 지원 여부를 나타냅니다.\n\n• LE Limited Discoverable: 제한된 시간 동안만 검색 가능\n• LE General Discoverable: 항상 검색 가능\n• BR/EDR Not Supported: Classic Bluetooth 미지원 (BLE 전용)</string>
+    <string name="help_adv_phy">Physical Layer(PHY)는 BLE 무선 통신의 물리 계층입니다.\n\n• 1M: 기본 PHY (1 Mbps), 가장 호환성 높음\n• 2M: 고속 PHY (2 Mbps), 낮은 전력으로 빠른 전송\n• Coded: 장거리 PHY, 전송 속도를 낮춰 통달 거리 확장</string>
+    <string name="help_adv_sid">Advertising Set ID(SID)는 Extended Advertising에서 광고 세트를 구분하는 식별자입니다. BLE 5.0 이상에서 여러 광고 세트를 동시에 운용할 때 사용합니다.</string>
+    <string name="help_adv_data_status">광고 데이터 수신 상태입니다.\n\n• Complete: 전체 데이터 수신 완료\n• Truncated: 데이터가 잘려서 수신됨 (버퍼 초과 등)</string>
+    <string name="help_adv_tx_power">송신 전력(Tx Power)은 디바이스가 광고 패킷을 송출하는 전력 레벨입니다. RSSI와 Tx Power의 차이로 대략적인 거리를 추정할 수 있습니다.</string>
+    <string name="help_adv_manufacturer">Manufacturer Specific Data에는 Company ID와 벤더 고유 데이터가 포함됩니다. Apple의 iBeacon, Samsung의 SmartThings 등 각 제조사의 프로토콜 데이터가 여기에 담깁니다.</string>
+
+    <!-- Signal Quality -->
+    <string name="label_signal_excellent">Excellent</string>
+    <string name="label_signal_good">Good</string>
+    <string name="label_signal_fair">Fair</string>
+    <string name="label_signal_weak">Weak</string>
+
+    <!-- Bond State -->
+    <string name="label_bonding">Bonding</string>
+    <string name="label_not_bonded">Not Bonded</string>
+
+    <!-- PHY Display Names -->
+    <string name="label_phy_1m">1M</string>
+    <string name="label_phy_2m">2M</string>
+    <string name="label_phy_coded">Coded</string>
+    <string name="label_phy_unknown">N/A</string>
+
+    <!-- Data Status Display Names -->
+    <string name="label_data_status_complete">Complete</string>
+    <string name="label_data_status_incomplete">Incomplete</string>
+    <string name="label_data_status_truncated">Truncated</string>
+    <string name="label_data_status_unknown">Unknown</string>
+
+    <!-- AD Flags -->
+    <string name="label_flag_le_limited">LE Limited Discoverable</string>
+    <string name="label_flag_le_general">LE General Discoverable</string>
+    <string name="label_flag_bredr_not_supported">BR/EDR Not Supported</string>
+    <string name="label_flag_le_bredr_controller">LE + BR/EDR (Controller)</string>
+    <string name="label_flag_le_bredr_host">LE + BR/EDR (Host)</string>
+
+    <!-- Accessibility -->
+    <string name="cd_help_info">Help information for %1$s</string>
+</resources>

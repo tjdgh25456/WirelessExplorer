@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="label_nav_dashboard">Dashboard</string>
+    <string name="label_nav_devices">Devices</string>
+    <string name="label_nav_analyze">Analyze</string>
+    <string name="label_nav_history">History</string>
+</resources>

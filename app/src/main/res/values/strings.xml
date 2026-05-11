@@ -127,6 +127,11 @@
     <!-- Permissions -->
     <string name="btn_open_settings">Open Settings</string>
 
+    <!-- Location Service -->
+    <string name="title_location_disabled">Location Service Required</string>
+    <string name="desc_location_disabled">Android requires Location Services to be enabled for BLE and Wi-Fi scanning.\n\nPlease turn on Location Services to discover nearby devices.</string>
+    <string name="btn_enable_location">Enable Location Services</string>
+
     <!-- Devices -->
     <string name="tab_bluetooth">Bluetooth</string>
     <string name="tab_wifi">Wi-Fi</string>
@@ -251,4 +256,10 @@
     <!-- Bluetooth Permission -->
     <string name="title_ble_permission">Bluetooth Permission Required</string>
     <string name="desc_ble_permission">Bluetooth permissions are needed to scan for and connect to nearby BLE devices.</string>
+
+    <!-- Navigation -->
+    <string name="label_nav_dashboard">Dashboard</string>
+    <string name="label_nav_devices">Devices</string>
+    <string name="label_nav_analyze">Analyze</string>
+    <string name="label_nav_history">History</string>
 </resources>

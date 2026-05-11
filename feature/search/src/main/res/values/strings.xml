@@ -1,0 +1,18 @@
+<resources>
+    <!-- Search -->
+    <string name="cd_back">Back</string>
+    <string name="hint_search">Search devices, SSID, MAC address\u2026</string>
+    <string name="cd_clear">Clear</string>
+    <string name="label_recent_searches">Recent Searches</string>
+    <string name="btn_clear_all">Clear All</string>
+    <string name="empty_no_results">No results found</string>
+    <string name="desc_try_scanning">Try scanning nearby devices first</string>
+    <string name="cd_delete_search">Delete search</string>
+
+    <!-- History Filters (shared with history feature) -->
+    <string name="filter_all">All</string>
+    <string name="filter_ble">BLE</string>
+    <string name="filter_wifi">Wi-Fi</string>
+    <string name="filter_nfc">NFC</string>
+    <string name="filter_uwb">UWB</string>
+</resources>

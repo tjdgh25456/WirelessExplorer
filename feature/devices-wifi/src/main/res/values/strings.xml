@@ -1,0 +1,25 @@
+<resources>
+    <!-- Wi-Fi -->
+    <string name="label_nearby_networks_format">NEARBY NETWORKS (%1$d)</string>
+    <string name="empty_no_networks">No networks found</string>
+    <string name="cd_scan">Scan</string>
+    <string name="title_wifi_disabled">Wi-Fi Disabled</string>
+    <string name="desc_wifi_disabled">Turn on Wi-Fi in your device settings to scan for nearby networks.</string>
+    <string name="btn_ok">OK</string>
+    <string name="label_connected">Connected</string>
+    <string name="label_ip">IP</string>
+    <string name="label_channel">Channel</string>
+    <string name="label_band">Band</string>
+    <string name="label_speed">Speed</string>
+    <string name="label_speed_mbps_format">%1$d Mbps</string>
+    <string name="label_security">Security</string>
+    <string name="label_wifi_standard">Standard</string>
+    <string name="label_channel_width">Channel Width</string>
+    <string name="label_download">Download</string>
+    <string name="label_upload">Upload</string>
+    <string name="title_wifi_permission">Wi-Fi Permission Required</string>
+    <string name="desc_wifi_permission">Wi-Fi permission is needed to scan for nearby networks.</string>
+    <string name="title_location_disabled">Location Service Required</string>
+    <string name="desc_location_disabled">Android requires Location Services to be enabled for BLE and Wi-Fi scanning.\n\nPlease turn on Location Services to discover nearby devices.</string>
+    <string name="btn_enable_location">Enable Location Services</string>
+</resources>
