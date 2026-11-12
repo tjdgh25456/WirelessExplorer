@@ -13,4 +13,3 @@
 ## Docs
 
 - [README](https://github.com/tjdgh25456/WirelessExplorer/blob/main/README.md): architecture, code highlights, module overview, build steps
-- [AGENTS.md](https://github.com/tjdgh25456/WirelessExplorer/blob/main/AGENTS.md): note for AI assistants
