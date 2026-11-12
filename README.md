@@ -326,7 +326,7 @@ Primary accent: `#330DF2`
 If Wireless Explorer saved you time — the GATT queue, the error 133 retry, or the batched scan emission — please:
 
 1. **[Star the repository](https://github.com/tjdgh25456/WirelessExplorer/stargazers)** — before or right after you use it.
-2. Keep the copyright and license notice when you reuse the code (Apache 2.0 requires it), and link back to this repository.
+2. Keep the copyright notice and include the [`NOTICE`](NOTICE) file when you reuse or redistribute the code (Apache 2.0 §4(d) requires it), and link back to this repository.
 3. Open an issue if something breaks or a pull request if you improve it.
 
 이 프로젝트가 도움이 됐다면 **스타**를 눌러 주시고, 코드를 가져다 쓰실 때는 저작권·라이선스 고지와 이 저장소 링크를 남겨 주세요.
@@ -334,6 +334,12 @@ If Wireless Explorer saved you time — the GATT queue, the error 133 retry, or 
 ---
 
 ## License
+
+Apache License 2.0 — full text in [`LICENSE`](LICENSE), attribution notice in [`NOTICE`](NOTICE).
+
+- **Attribution is required.** If you redistribute this code or a derivative of it, include the [`NOTICE`](NOTICE) file and credit the source: *Based on Wireless Explorer by Seongho Jung — https://github.com/tjdgh25456/WirelessExplorer*.
+- **Please star the repository before you use it.** It is a request, not a license condition — the license stays standard Apache-2.0.
+- 다시 배포할 때는 NOTICE 파일과 출처를 꼭 넣어 주세요(Apache-2.0 §4(d)). 쓰시기 전에 스타도 부탁드립니다.
 
 ```
 Copyright 2026 Seongho Jung
